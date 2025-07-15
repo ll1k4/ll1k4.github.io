@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Взрывной Кликер</title>
+    <title>ULTIMATE MEME CLICKER</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Comic Sans MS', cursive;
             background: #000;
             color: #fff;
             text-align: center;
@@ -35,19 +35,22 @@
         #joke-display {
             font-size: 18px;
             color: #fff;
-            min-height: 50px;
+            min-height: 60px;
             margin: 5px 0 15px;
-            padding: 10px;
-            background: rgba(255, 0, 170, 0.2);
+            padding: 12px;
+            background: rgba(20, 20, 20, 0.8);
             border-radius: 10px;
-            border-left: 3px solid #ff00aa;
+            border: 2px dashed #ff00aa;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #click-area {
             flex-grow: 1;
-            min-height: 200px;
+            min-height: 250px;
             background: #111;
-            border-radius: 12px;
+            border-radius: 15px;
             margin: 5px 0;
             display: flex;
             justify-content: center;
@@ -55,38 +58,47 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
+            border: 3px solid #ff00aa;
+            box-shadow: 0 0 20px rgba(255, 0, 170, 0.5);
+            transition: border 0.3s;
+        }
+        #click-area:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
         }
         #click-area img {
-            max-height: 70%;
-            max-width: 70%;
+            max-height: 80%;
+            max-width: 80%;
             position: absolute;
-            transition: all 0.3s;
+            transition: all 0.4s;
+        }
+        #progress-container {
+            margin: 15px 0 5px;
         }
         #race-track {
             width: 100%;
-            height: 25px;
+            height: 70px; /* Увеличена высота дорожки */
             background: #222;
-            border-radius: 12px;
-            margin: 10px 0 5px;
+            border-radius: 35px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 0 10px rgba(255, 0, 170, 0.3);
+            box-shadow: 0 0 15px rgba(255, 0, 170, 0.4);
         }
         #runner {
             position: absolute;
             left: 0;
-            top: -12px;
-            height: 50px;
-            transition: left 0.3s;
-            filter: drop-shadow(0 0 5px #00ffff);
+            top: -5px; /* Поднят кот для лучшей видимости */
+            height: 80px; /* Увеличен размер кота */
+            transition: left 0.4s;
+            filter: drop-shadow(0 0 8px #00ffff);
         }
         #score {
             font-size: 28px;
             font-weight: bold;
             color: #ff55ff;
             text-shadow: 0 0 10px #ff55ff;
-            margin: 5px 0;
-            padding: 5px;
+            margin: 10px 0 5px;
+            padding: 8px;
         }
         .explosion {
             position: absolute;
@@ -95,43 +107,69 @@
             background: radial-gradient(circle, rgba(255,0,170,0.8) 0%, rgba(255,0,170,0) 70%);
             border-radius: 50%;
             transform: scale(0);
-            animation: explode 0.5s forwards;
+            animation: explode 0.6s forwards;
             pointer-events: none;
         }
         @keyframes explode {
             0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(3); opacity: 0; }
+            100% { transform: scale(4); opacity: 0; }
         }
         .click-effect {
             position: absolute;
-            font-size: 24px;
+            font-size: 26px;
             color: #ff55ff;
-            animation: float 1s ease-out;
+            animation: float 1.2s ease-out;
             opacity: 0;
             pointer-events: none;
-            text-shadow: 0 0 5px #ff55ff;
+            text-shadow: 0 0 8px #ff55ff;
             font-weight: bold;
         }
         @keyframes float {
             0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-100px); opacity: 0; }
+            100% { transform: translateY(-120px); opacity: 0; }
+        }
+        #final-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #final-score {
+            font-size: 42px;
+            color: #ff00aa;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px #ff00aa;
         }
     </style>
 </head>
 <body>
     <div id="game">
         <div id="timer">20</div>
-        <div id="joke-display">Кликай на мемы для взрыва!</div>
+        <div id="joke-display">Кликай на мемы — взрывай их!</div>
         
         <div id="click-area">
             <img src="https://media.tenor.com/pESkzhvZiVMAAAAM/persona-4-tohru-adachi.gif" alt="Мем">
         </div>
         
-        <div id="race-track">
-            <img id="runner" src="https://steamuserimages-a.akamaihd.net/ugc/968732126365580783/01E8F22A95D4F677D68A271488D73261B2056533/" alt="Бегущий кот">
+        <div id="progress-container">
+            <div id="race-track">
+                <img id="runner" src="https://steamuserimages-a.akamaihd.net/ugc/968732126365580783/01E8F22A95D4F677D68A271488D73261B2056533/" alt="Бегущий кот">
+            </div>
         </div>
         
         <div id="score">0 кликов</div>
+        
+        <div id="final-screen">
+            <div id="final-joke"></div>
+            <div id="final-score"></div>
+        </div>
     </div>
 
     <script>
@@ -141,6 +179,8 @@
         let gameActive = false;
         let timer;
         let gameStarted = false;
+        let jokesHistory = [];
+        let currentJoke = "";
 
         // Мемные гифки
         const memeGifs = [
@@ -152,19 +192,51 @@
             "https://media.tenor.com/QEq7E9CIctIAAAA1/lebonbon-meme.webp",
             "https://media.tenor.com/rgJleMzUa8MAAAAM/bailes.gif",
             "https://media.tenor.com/IqGSSMAeMrgAAAA1/canp.webp",
+			"https://media.tenor.com/bit5AFW4T10AAAAM/cat-cat-meme.gif",
+            "https://media.tenor.com/W92_0Xh2XTMAAAAm/kuchisake-0nna-nexbot.webp",
+            "https://media.tenor.com/6NsPXmwxOBYAAAAm/cursed-mario-cursed.webp",
             "https://media.tenor.com/S03FliK9dXgAAAA1/mikujo-persona-3.webp"
+			
         ];
 
-        // 100+ пошлых шуток
+        // 150+ шуток (программистские + пошлые загадки)
         const jokes = [
-            "Почему программисты путают Хэллоуин и Рождество? Oct 31 == Dec 25!",
-            "Что сказал гинеколог пациентке? 'Будем смотреть или делать?'",
-            "Почему мужчины после секса засыпают? Windows говорит 'Завершение работы...'",
+            "Почему программист всегда мокрый? Потому что он постоянно в потоках!",
+            "Как называют программиста на пляже? Безтолочь!",
+            "Почему программисты не любят природу? Там нет интерфейса!",
+            "Что сказал null undefined? Ничего, оба упали!",
+            "Почему JavaScript разработчик не мог жениться? Потому что не мог найти Promise!",
+            "Как объяснить бабушке что такое баг? 'Вот в моё время были жуки в тараканах, а не в компьютерах!'",
+            "Почему React разработчик умер? Потому что не смог обновить state!",
+            "Что сказал git при аресте? 'Я делал merge, не разбирался!'",
+            "Почему Python разработчик похудел? Перешёл с Django на Flask!",
+            "Какой напиток любит backend разработчик? Серверный чай!",
+            "Какая женщина сначала трется около тебя, а потом требует деньги? (Кондуктор в трамвае)",
+            "Что длинное и твёрдое у программиста утром? (Стоячий код)",
+            "Чем больше берешь, тем больше оставляешь. Что это? (Шаги)",
+            "Что можно сломать, даже если это никто не трогает? (Обещание)",
+            "Какая разница между мужем и любовником? 45 минут!",
+            "Что общего между женой и пулей? И то, и другое сначала вылетает, а потом проблемы!",
+            "Почему мужчины после секса засыпают? Потому что даже Windows говорит 'Завершение работы...'",
             "Что сказал презерватив перед смертью? 'Я кончил!'",
+			"Чтобы спереди погладить нужно сзади полизать (марка)",
             "Почему у мужчин утро начинается с стояка? Чтобы не забыть, что они ещё что-то могут поднять!",
-            // ... (добавьте остальные шутки)
-            "Почему нельзя доверять атомам? Они всё составляют!"
+            "Что сказал гинеколог пациентке с большой грудью? 'Извините, я тут немного заблудился!'"
+            // ... (добавьте ещё 130+ шуток)
         ];
+
+        // Получить уникальную случайную шутку
+        function getRandomJoke() {
+            if (jokesHistory.length >= jokes.length) jokesHistory = [];
+            
+            let joke;
+            do {
+                joke = jokes[Math.floor(Math.random() * jokes.length)];
+            } while (jokesHistory.includes(joke));
+            
+            jokesHistory.push(joke);
+            return joke;
+        }
 
         // Начало игры при первом клике
         document.getElementById("click-area").onclick = (e) => {
@@ -179,56 +251,76 @@
             score++;
             updateScore();
             
-            // Анимация взрыва
-            const explosion = document.createElement("div");
-            explosion.className = "explosion";
-            explosion.style.left = (e.clientX - 50) + "px";
-            explosion.style.top = (e.clientY - 50) + "px";
-            document.getElementById("click-area").appendChild(explosion);
-            setTimeout(() => explosion.remove(), 500);
+            // Эффект взрыва
+            createExplosion(e.clientX, e.clientY);
             
             // Анимация мема
-            const meme = document.querySelector("#click-area img");
-            meme.style.transform = "scale(1.5)";
-            meme.style.opacity = "0";
+            animateMeme();
             
-            // Замена мема
-            setTimeout(() => {
-                const randomGif = memeGifs[Math.floor(Math.random() * memeGifs.length)];
-                meme.src = randomGif;
-                meme.style.transform = "scale(1)";
-                meme.style.opacity = "1";
-            }, 300);
-            
-            // Показ шутки (каждые 3 клика)
-            if (score % 3 === 0) {
-                document.getElementById("joke-display").textContent = 
-                    jokes[Math.floor(Math.random() * jokes.length)];
+            // Показ шутки (каждые 2-4 клика)
+            if (score % Math.floor(Math.random() * 3 + 2) === 0) {
+                showJoke();
             }
             
-            // Движение котика
-            const progress = Math.min(score / 120, 1);
-            document.getElementById("runner").style.left = `calc(${progress * 100}% - 25px)`;
+            // Обновление прогресса
+            updateProgress();
         };
+
+        // Создать эффект взрыва
+        function createExplosion(x, y) {
+            const explosion = document.createElement("div");
+            explosion.className = "explosion";
+            explosion.style.left = (x - 50) + "px";
+            explosion.style.top = (y - 50) + "px";
+            document.getElementById("click-area").appendChild(explosion);
+            setTimeout(() => explosion.remove(), 600);
+        }
+
+        // Анимация мема
+        function animateMeme() {
+            const meme = document.querySelector("#click-area img");
+            meme.style.transform = "scale(1.8) rotate(10deg)";
+            meme.style.opacity = "0";
+            
+            setTimeout(() => {
+                meme.src = memeGifs[Math.floor(Math.random() * memeGifs.length)];
+                meme.style.transform = "scale(1) rotate(0)";
+                meme.style.opacity = "1";
+            }, 300);
+        }
+
+        // Показать шутку
+        function showJoke() {
+            currentJoke = getRandomJoke();
+            document.getElementById("joke-display").textContent = currentJoke;
+            document.getElementById("joke-display").style.animation = "none";
+            setTimeout(() => {
+                document.getElementById("joke-display").style.animation = "pulse 0.8s";
+            }, 10);
+        }
+
+        // Обновить прогресс
+        function updateProgress() {
+            const progress = Math.min(score / 100, 1);
+            document.getElementById("runner").style.left = `calc(${progress * 100}% - 40px)`;
+        }
 
         // Запуск игры
         function startGame() {
             gameActive = true;
             score = 0;
             timeLeft = 20;
+            jokesHistory = [];
             updateScore();
+            showJoke();
             
             // Таймер
             timer = setInterval(() => {
                 timeLeft--;
                 document.getElementById("timer").textContent = timeLeft;
                 
-                // Мигание при окончании времени
                 if (timeLeft <= 5) {
-                    document.getElementById("timer").style.animation = "none";
-                    setTimeout(() => {
-                        document.getElementById("timer").style.animation = "pulse 0.5s infinite";
-                    }, 10);
+                    document.getElementById("timer").style.animation = "pulse 0.5s infinite";
                 }
                 
                 if (timeLeft <= 0) {
@@ -241,14 +333,45 @@
         function endGame() {
             clearInterval(timer);
             gameActive = false;
-            document.getElementById("joke-display").textContent = 
-                `Время вышло! Финальный счет: ${score} кликов!`;
             
-            // Сброс для новой игры
+            // Показываем финальный экран
+            document.getElementById("final-joke").textContent = currentJoke;
+            document.getElementById("final-score").textContent = `Твой результат: ${score} кликов!`;
+            document.getElementById("final-screen").style.display = "flex";
+            
+            // Кнопка рестарта
             setTimeout(() => {
-                gameStarted = false;
-                document.getElementById("timer").style.animation = "";
-            }, 3000);
+                const restartBtn = document.createElement("button");
+                restartBtn.textContent = "Играть снова";
+                restartBtn.style = `
+                    padding: 12px 25px;
+                    background: #ff00aa;
+                    color: white;
+                    border: none;
+                    border-radius: 25px;
+                    font-size: 18px;
+                    cursor: pointer;
+                    margin-top: 20px;
+                    transition: all 0.3s;
+                `;
+                restartBtn.onmouseover = () => {
+                    restartBtn.style.background = "#00ffff";
+                    restartBtn.style.transform = "scale(1.05)";
+                };
+                restartBtn.onmouseout = () => {
+                    restartBtn.style.background = "#ff00aa";
+                    restartBtn.style.transform = "scale(1)";
+                };
+                restartBtn.onclick = () => {
+                    document.getElementById("final-screen").style.display = "none";
+                    document.getElementById("final-screen").removeChild(restartBtn);
+                    gameStarted = false;
+                    document.getElementById("timer").style.animation = "";
+                    document.getElementById("click-area").innerHTML = 
+                        '<img src="https://media.tenor.com/pESkzhvZiVMAAAAM/persona-4-tohru-adachi.gif" alt="Мем">';
+                };
+                document.getElementById("final-screen").appendChild(restartBtn);
+            }, 1000);
         }
 
         // Обновление счета
@@ -259,10 +382,10 @@
             const effect = document.createElement("div");
             effect.className = "click-effect";
             effect.textContent = `+1`;
-            effect.style.left = (Math.random() * 80 + 10) + "%";
-            effect.style.top = "40%";
+            effect.style.left = (Math.random() * 70 + 15) + "%";
+            effect.style.top = (Math.random() * 50 + 25) + "%";
             document.getElementById("click-area").appendChild(effect);
-            setTimeout(() => effect.remove(), 1000);
+            setTimeout(() => effect.remove(), 1200);
         }
     </script>
 </body>

@@ -3,70 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emoji Clicker</title>
+    <title>Кликер-Забег</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            font-family: 'Comic Sans MS', cursive;
+            background: #ffeb3b;
             text-align: center;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             user-select: none;
             overflow: hidden;
         }
         #game {
-            max-width: 400px;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
+            background: white;
             border-radius: 20px;
-            background: rgba(255, 255, 255, 0.8);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
         h1 {
-            color: #ff4757;
+            color: #e91e63;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
-        #emoji-container {
-            font-size: 100px;
+        #timer {
+            font-size: 40px;
+            font-weight: bold;
+            color: #e91e63;
+            margin: 10px 0;
+        }
+        #click-area {
+            font-size: 80px;
             cursor: pointer;
             margin: 20px 0;
             transition: transform 0.1s;
         }
-        #emoji-container:active {
+        #click-area:active {
             transform: scale(0.9);
+        }
+        #joke-display {
+            font-size: 18px;
+            color: #9c27b0;
+            min-height: 50px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        #race-track {
+            width: 100%;
+            height: 60px;
+            background: #8bc34a;
+            border-radius: 10px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        #runner {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-size: 50px;
+            transition: left 0.3s;
         }
         #score {
             font-size: 24px;
             font-weight: bold;
-            color: #2f3542;
-        }
-        #meme-text {
-            font-size: 18px;
-            color: #ff6b81;
-            min-height: 50px;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-        #upgrades {
-            margin-top: 20px;
+            color: #2196f3;
         }
         button {
-            background: #ff6b81;
+            background: #e91e63;
             color: white;
             border: none;
-            padding: 10px 15px;
-            margin: 5px;
+            padding: 12px 25px;
+            margin: 10px;
             border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.3s;
+            font-size: 16px;
+            transition: transform 0.2s;
         }
         button:hover {
-            background: #ff4757;
+            transform: scale(1.05);
         }
         .click-effect {
             position: absolute;
-            font-size: 30px;
+            font-size: 20px;
+            color: #ff5722;
             animation: float 1s ease-out;
             opacity: 0;
             pointer-events: none;
@@ -79,98 +100,99 @@
 </head>
 <body>
     <div id="game">
-        <h1>🐸 Emoji Clicker</h1>
-        <div id="score">Очки: 0</div>
-        <div id="meme-text">Жми на эмодзи! 👆</div>
-        <div id="emoji-container">🐶</div>
-        <div id="upgrades">
-            <button onclick="upgradeClickPower()">Улучшить клик (+1) 💪</button>
-            <button onclick="buyAutoClicker()">Автокликер (10 очков) ⚡</button>
+        <h1>🏃‍♂️ Кликер-Забег</h1>
+        <div id="timer">20</div>
+        <div id="joke-display">Кликай быстрее! Кто дальше забежит?</div>
+        <div id="click-area">🐱</div>
+        <div id="race-track">
+            <div id="runner">🏃‍♂️</div>
         </div>
+        <div id="score">Кликов: 0</div>
+        <button id="start-btn" onclick="startGame()">СТАРТ!</button>
     </div>
 
     <script>
+        // Игровые переменные
         let score = 0;
-        let clickPower = 1;
-        let autoClickers = 0;
-        const emojis = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔", "🐧", "🦄", "🐲", "🍕", "🍔", "🎮", "🚀", "💩"];
-        const memePhrases = [
-            "Крипово, но ок!",
-            "Это база!",
-            "Чисто пушка!",
-            "Ого, вау!",
-            "Агрёмн!",
-            "Кринжово...",
-            "Хайпанём немножко!",
-            "Мемная мощь!",
-            "Ты гений кликов!",
-            "Вот это да!",
-            "Лол, кек, чебурек!",
-            "Мем уровня 'Бог'"
+        let timeLeft = 20;
+        let gameActive = false;
+        let timer;
+
+        // 15+ пошлых шуток (18+)
+        const jokes = [
+            "Почему у дятла нет девушки? Потому что он всё время долбит!",
+            "Что общего между велосипедом и кроватью? И на том, и на другом можно устать!",
+            "Почему программисты такие плохи в сексе? Потому что они всегда забывают про foreplay и сразу переходят к execution!",
+            "Что сказал один сперматозоид другому? 'Блин, опять в рот попал!'",
+            "Почему мужчины любят большие груди? Потому что в маленьких даже телефон не заряжается!",
+            "Что сказал гинеколог пациентке? 'Ну что, будем смотреть или делать?'",
+            "Почему женщины носят трусы? Чтобы коты не смотрели порно!",
+            "Что общего между женой и пулей? И то, и другое сначала вылетает, а потом проблемы!",
+            "Почему мужчины после секса засыпают? Потому что даже Windows говорит 'Завершение работы...'",
+            "Что сказал презерватив перед смертью? 'Я кончил!'",
+            "Почему у мужчин утро начинается с стояка? Чтобы не забыть, что они ещё что-то могут поднять!",
+            "Что сказал гинеколог пациентке с большой грудью? 'Извините, я тут немного заблудился!'",
+            "Почему женщины не любят быстрых мужчин? Потому что 30 секунд - это не 'быстро', это 'рано'!",
+            "Что общего между женой и террористом? С террористом можно договориться!",
+            "Почему мужчины не понимают намёков? Потому что 'иди нахер' они понимают буквально!"
         ];
 
-        // Клик по эмодзи
-        document.getElementById("emoji-container").addEventListener("click", (e) => {
-            score += clickPower;
+        // Начать игру
+        function startGame() {
+            if (gameActive) return;
+            
+            gameActive = true;
+            score = 0;
+            timeLeft = 20;
             updateScore();
+            document.getElementById("start-btn").disabled = true;
             
-            // Меняем эмодзи
-            const emojiContainer = document.getElementById("emoji-container");
-            emojiContainer.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            // Таймер
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
             
-            // Анимация
-            emojiContainer.style.transform = "scale(0.9)";
-            setTimeout(() => { emojiContainer.style.transform = "scale(1)"; }, 100);
-            
-            // Рандомная фраза
-            document.getElementById("meme-text").textContent = 
-                memePhrases[Math.floor(Math.random() * memePhrases.length)];
-            
-            // Эффект при клике
-            const effect = document.createElement("div");
-            effect.className = "click-effect";
-            effect.textContent = "+" + clickPower;
-            effect.style.left = (e.clientX - 20) + "px";
-            effect.style.top = (e.clientY - 50) + "px";
-            document.body.appendChild(effect);
-            setTimeout(() => effect.remove(), 1000);
-        });
-
-        // Улучшение клика
-        function upgradeClickPower() {
-            if (score >= 10) {
-                score -= 10;
-                clickPower += 1;
+            // Клик-зона
+            document.getElementById("click-area").onclick = () => {
+                if (!gameActive) return;
+                
+                score++;
                 updateScore();
-                document.getElementById("meme-text").textContent = "Теперь ты кликаешь сильнее! 💥";
-            } else {
-                document.getElementById("meme-text").textContent = "Не хватает очков! Кликай больше!";
-            }
+                
+                // Анимация клика
+                const clickArea = document.getElementById("click-area");
+                clickArea.style.transform = "scale(0.9)";
+                setTimeout(() => { clickArea.style.transform = "scale(1)"; }, 100);
+                
+                // Шутка (каждый 3-й клик)
+                if (score % 3 === 0) {
+                    document.getElementById("joke-display").textContent = 
+                        jokes[Math.floor(Math.random() * jokes.length)];
+                }
+                
+                // Движение бегуна
+                const progress = Math.min(score / 100, 1);
+                document.getElementById("runner").style.left = `calc(${progress * 100}% - 50px)`;
+            };
         }
 
-        // Автокликер
-        function buyAutoClicker() {
-            if (score >= 10) {
-                score -= 10;
-                autoClickers += 1;
-                updateScore();
-                document.getElementById("meme-text").textContent = "Автокликер куплен! ⚡";
-            } else {
-                document.getElementById("meme-text").textContent = "Нужно больше очков!";
-            }
+        // Конец игры
+        function endGame() {
+            clearInterval(timer);
+            gameActive = false;
+            document.getElementById("start-btn").disabled = false;
+            document.getElementById("joke-display").textContent = 
+                `Игра окончена! Ты сделал ${score} кликов!`;
         }
 
-        // Автокликер работает каждую секунду
-        setInterval(() => {
-            if (autoClickers > 0) {
-                score += autoClickers;
-                updateScore();
-            }
-        }, 1000);
-
-        // Обновление счёта
+        // Обновление счета
         function updateScore() {
-            document.getElementById("score").textContent = `Очки: ${score}`;
+            document.getElementById("score").textContent = `Кликов: ${score}`;
         }
     </script>
 </body>

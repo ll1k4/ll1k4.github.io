@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мемный Кликер</title>
+    <title>Взрывной Кликер</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -11,140 +11,127 @@
             color: #fff;
             text-align: center;
             margin: 0;
-            padding: 0;
+            padding: 10px;
             user-select: none;
             overflow: hidden;
         }
         #game {
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
-        }
-        h1 {
-            color: #ff00aa;
-            text-shadow: 0 0 15px #ff00aa;
-            font-size: 42px;
-            margin: 10px 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
         }
         #timer {
-            font-size: 50px;
+            font-size: 32px;
             font-weight: bold;
             color: #00ffff;
             text-shadow: 0 0 10px #00ffff;
-            margin: 20px 0;
+            margin: 5px 0;
+            padding: 5px;
+        }
+        #joke-display {
+            font-size: 18px;
+            color: #fff;
+            min-height: 50px;
+            margin: 5px 0 15px;
+            padding: 10px;
+            background: rgba(255, 0, 170, 0.2);
+            border-radius: 10px;
+            border-left: 3px solid #ff00aa;
+            text-align: center;
         }
         #click-area {
-            height: 350px;
+            flex-grow: 1;
+            min-height: 200px;
             background: #111;
-            border: 4px solid #ff00aa;
-            border-radius: 15px;
-            margin: 20px 0;
+            border-radius: 12px;
+            margin: 5px 0;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            transition: all 0.3s;
-        }
-        #click-area:hover {
-            border-color: #00ffff;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
         }
         #click-area img {
-            max-height: 80%;
-            max-width: 80%;
-            transition: transform 0.1s;
-        }
-        #click-area:active img {
-            transform: scale(0.95);
-        }
-        #joke-display {
-            font-size: 22px;
-            color: #ff55ff;
-            min-height: 60px;
-            margin: 25px 0;
-            font-weight: bold;
-            text-shadow: 0 0 10px #ff55ff;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
+            max-height: 70%;
+            max-width: 70%;
+            position: absolute;
+            transition: all 0.3s;
         }
         #race-track {
             width: 100%;
-            height: 30px;
+            height: 25px;
             background: #222;
-            border-radius: 15px;
-            margin: 30px 0;
+            border-radius: 12px;
+            margin: 10px 0 5px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(255, 0, 170, 0.5);
+            box-shadow: 0 0 10px rgba(255, 0, 170, 0.3);
         }
         #runner {
             position: absolute;
             left: 0;
-            top: -15px;
-            height: 60px;
+            top: -12px;
+            height: 50px;
             transition: left 0.3s;
-            filter: drop-shadow(0 0 10px #00ffff);
+            filter: drop-shadow(0 0 5px #00ffff);
         }
         #score {
-            font-size: 36px;
+            font-size: 28px;
             font-weight: bold;
-            color: #00ffff;
-            text-shadow: 0 0 15px #00ffff;
-            margin: 20px 0;
+            color: #ff55ff;
+            text-shadow: 0 0 10px #ff55ff;
+            margin: 5px 0;
+            padding: 5px;
         }
-        #instructions {
+        .explosion {
             position: absolute;
-            bottom: 20px;
-            width: 100%;
-            color: #ff00aa;
-            font-size: 24px;
-            text-shadow: 0 0 10px #ff00aa;
-            animation: pulse 1.5s infinite;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,0,170,0.8) 0%, rgba(255,0,170,0) 70%);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: explode 0.5s forwards;
+            pointer-events: none;
         }
-        @keyframes pulse {
-            0% { opacity: 0.5; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1.05); }
-            100% { opacity: 0.5; transform: scale(0.95); }
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
         }
         .click-effect {
             position: absolute;
-            font-size: 28px;
+            font-size: 24px;
             color: #ff55ff;
             animation: float 1s ease-out;
             opacity: 0;
             pointer-events: none;
-            text-shadow: 0 0 10px #ff55ff;
+            text-shadow: 0 0 5px #ff55ff;
             font-weight: bold;
         }
         @keyframes float {
             0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-120px); opacity: 0; }
-        }
-        .default-image {
-            height: 200px;
-            filter: drop-shadow(0 0 15px #ff00aa);
+            100% { transform: translateY(-100px); opacity: 0; }
         }
     </style>
 </head>
 <body>
     <div id="game">
-        <h1>МЕМНЫЙ КЛИКЕР</h1>
         <div id="timer">20</div>
-        <div id="score">КЛИКОВ: 0</div>
+        <div id="joke-display">Кликай на мемы для взрыва!</div>
         
         <div id="click-area">
-            <img class="default-image" src="https://media.tenor.com/pESkzhvZiVMAAAAM/persona-4-tohru-adachi.gif" alt="Мем">
-            <div id="instructions">КЛИКНИТЕ ДЛЯ СТАРТА!</div>
+            <img src="https://media.tenor.com/pESkzhvZiVMAAAAM/persona-4-tohru-adachi.gif" alt="Мем">
         </div>
         
         <div id="race-track">
             <img id="runner" src="https://steamuserimages-a.akamaihd.net/ugc/968732126365580783/01E8F22A95D4F677D68A271488D73261B2056533/" alt="Бегущий кот">
         </div>
         
-        <div id="joke-display">Готовы кликать как сумасшедшие?</div>
+        <div id="score">0 кликов</div>
     </div>
 
     <script>
@@ -170,21 +157,20 @@
 
         // 100+ пошлых шуток
         const jokes = [
-            "Почему программисты путают Хэллоуин и Рождество? Потому что Oct 31 == Dec 25!",
-            "Что сказал гинеколог пациентке? 'Ну что, будем смотреть или делать?'",
-            "Почему мужчины после секса засыпают? Потому что даже Windows говорит 'Завершение работы...'",
+            "Почему программисты путают Хэллоуин и Рождество? Oct 31 == Dec 25!",
+            "Что сказал гинеколог пациентке? 'Будем смотреть или делать?'",
+            "Почему мужчины после секса засыпают? Windows говорит 'Завершение работы...'",
             "Что сказал презерватив перед смертью? 'Я кончил!'",
             "Почему у мужчин утро начинается с стояка? Чтобы не забыть, что они ещё что-то могут поднять!",
-            // ... (добавьте остальные 95 шуток)
-            "Почему нельзя доверять атомам? Потому что они всё составляют!"
+            // ... (добавьте остальные шутки)
+            "Почему нельзя доверять атомам? Они всё составляют!"
         ];
 
         // Начало игры при первом клике
-        document.getElementById("click-area").onclick = () => {
+        document.getElementById("click-area").onclick = (e) => {
             if (!gameStarted) {
                 gameStarted = true;
                 startGame();
-                document.getElementById("instructions").style.display = "none";
                 return;
             }
             
@@ -193,35 +179,36 @@
             score++;
             updateScore();
             
-            // Анимация клика
-            const clickArea = document.getElementById("click-area");
-            clickArea.style.transform = "scale(0.98)";
-            setTimeout(() => { clickArea.style.transform = "scale(1)"; }, 100);
+            // Анимация взрыва
+            const explosion = document.createElement("div");
+            explosion.className = "explosion";
+            explosion.style.left = (e.clientX - 50) + "px";
+            explosion.style.top = (e.clientY - 50) + "px";
+            document.getElementById("click-area").appendChild(explosion);
+            setTimeout(() => explosion.remove(), 500);
             
-            // Показ случайного мема (25% шанс)
-            if (Math.random() < 0.25) {
-                const gifUrl = memeGifs[Math.floor(Math.random() * memeGifs.length)];
-                clickArea.innerHTML = `<img src="${gifUrl}" alt="Мем"><div id="instructions" style="display:none">КЛИКНИТЕ ДЛЯ СТАРТА!</div>`;
-                setTimeout(() => {
-                    const nextGif = memeGifs[Math.floor(Math.random() * memeGifs.length)];
-                    clickArea.innerHTML = `<img src="${nextGif}" alt="Мем"><div id="instructions" style="display:none">КЛИКНИТЕ ДЛЯ СТАРТА!</div>`;
-                }, 1500);
-            }
+            // Анимация мема
+            const meme = document.querySelector("#click-area img");
+            meme.style.transform = "scale(1.5)";
+            meme.style.opacity = "0";
             
-            // Показ шутки (каждые 3-5 кликов)
-            if (score % Math.floor(Math.random() * 3 + 3) === 0) {
+            // Замена мема
+            setTimeout(() => {
+                const randomGif = memeGifs[Math.floor(Math.random() * memeGifs.length)];
+                meme.src = randomGif;
+                meme.style.transform = "scale(1)";
+                meme.style.opacity = "1";
+            }, 300);
+            
+            // Показ шутки (каждые 3 клика)
+            if (score % 3 === 0) {
                 document.getElementById("joke-display").textContent = 
                     jokes[Math.floor(Math.random() * jokes.length)];
-                
-                // Случайный цвет текста
-                const colors = ["#ff00aa", "#00ffff", "#ff55ff", "#aa00ff", "#00ffaa"];
-                document.getElementById("joke-display").style.color = 
-                    colors[Math.floor(Math.random() * colors.length)];
             }
             
             // Движение котика
-            const progress = Math.min(score / 150, 1);
-            document.getElementById("runner").style.left = `calc(${progress * 100}% - 30px)`;
+            const progress = Math.min(score / 120, 1);
+            document.getElementById("runner").style.left = `calc(${progress * 100}% - 25px)`;
         };
 
         // Запуск игры
@@ -231,11 +218,6 @@
             timeLeft = 20;
             updateScore();
             
-            // Установка случайного мема
-            const clickArea = document.getElementById("click-area");
-            const randomGif = memeGifs[Math.floor(Math.random() * memeGifs.length)];
-            clickArea.innerHTML = `<img src="${randomGif}" alt="Мем"><div id="instructions" style="display:none">КЛИКНИТЕ ДЛЯ СТАРТА!</div>`;
-            
             // Таймер
             timer = setInterval(() => {
                 timeLeft--;
@@ -243,8 +225,10 @@
                 
                 // Мигание при окончании времени
                 if (timeLeft <= 5) {
-                    document.getElementById("timer").style.color = "#ff0055";
-                    document.getElementById("timer").style.textShadow = "0 0 15px #ff0055";
+                    document.getElementById("timer").style.animation = "none";
+                    setTimeout(() => {
+                        document.getElementById("timer").style.animation = "pulse 0.5s infinite";
+                    }, 10);
                 }
                 
                 if (timeLeft <= 0) {
@@ -258,31 +242,26 @@
             clearInterval(timer);
             gameActive = false;
             document.getElementById("joke-display").textContent = 
-                `ИГРА ОКОНЧЕНА! ФИНАЛЬНЫЙ СЧЕТ: ${score} КЛИКОВ!`;
-            document.getElementById("joke-display").style.color = "#ff00aa";
+                `Время вышло! Финальный счет: ${score} кликов!`;
             
             // Сброс для новой игры
             setTimeout(() => {
                 gameStarted = false;
-                document.getElementById("instructions").style.display = "block";
-                document.getElementById("timer").style.color = "#00ffff";
-                document.getElementById("timer").style.textShadow = "0 0 10px #00ffff";
-                document.getElementById("click-area").innerHTML = 
-                    `<img class="default-image" src="${memeGifs[0]}" alt="Мем"><div id="instructions">КЛИКНИТЕ ДЛЯ СТАРТА!</div>`;
-            }, 4000);
+                document.getElementById("timer").style.animation = "";
+            }, 3000);
         }
 
         // Обновление счета
         function updateScore() {
-            document.getElementById("score").textContent = `КЛИКОВ: ${score}`;
+            document.getElementById("score").textContent = `${score} кликов`;
             
             // Эффект при клике
             const effect = document.createElement("div");
             effect.className = "click-effect";
             effect.textContent = `+1`;
             effect.style.left = (Math.random() * 80 + 10) + "%";
-            effect.style.top = "60%";
-            document.getElementById("game").appendChild(effect);
+            effect.style.top = "40%";
+            document.getElementById("click-area").appendChild(effect);
             setTimeout(() => effect.remove(), 1000);
         }
     </script>

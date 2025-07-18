@@ -3,390 +3,423 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ULTIMATE MEME CLICKER</title>
+    <title>Ultimate Monster Crusher</title>
     <style>
         body {
-            font-family: 'Comic Sans MS', cursive;
-            background: #000;
-            color: #fff;
-            text-align: center;
+            font-family: 'Arial Black', sans-serif;
+            background: #0a0a0a;
+            color: white;
             margin: 0;
-            padding: 10px;
+            padding: 0;
             user-select: none;
             overflow: hidden;
         }
-        #game {
+        #game-container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
+            padding: 20px;
+            position: relative;
             height: 100vh;
             box-sizing: border-box;
         }
-        #timer {
-            font-size: 32px;
-            font-weight: bold;
-            color: #00ffff;
-            text-shadow: 0 0 10px #00ffff;
-            margin: 5px 0;
-            padding: 5px;
-        }
-        #joke-display {
-            font-size: 18px;
-            color: #fff;
-            min-height: 60px;
-            margin: 5px 0 15px;
-            padding: 12px;
-            background: rgba(20, 20, 20, 0.8);
-            border-radius: 10px;
-            border: 2px dashed #ff00aa;
-            text-align: center;
+        #header {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
         }
-        #click-area {
-            flex-grow: 1;
-            min-height: 250px;
+        #money {
+            color: #ff6b6b;
+            font-size: 24px;
+            text-shadow: 0 0 5px #ff0000;
+        }
+        #level {
+            color: #ff5555;
+            font-size: 24px;
+            text-shadow: 0 0 5px #ff0000;
+        }
+        #xp-container {
+            width: 100%;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        #xp-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff5555, #ff9e00);
+            transition: width 0.3s;
+        }
+        #monster-area {
+            height: 55vh;
             background: #111;
             border-radius: 15px;
-            margin: 5px 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #8b0000;
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.7);
+        }
+        .monster {
+            position: absolute;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            border: 3px solid #ff00aa;
-            box-shadow: 0 0 20px rgba(255, 0, 170, 0.5);
-            transition: border 0.3s;
+            transition: transform 0.1s;
+            image-rendering: pixelated;
         }
-        #click-area:hover {
-            border-color: #00ffff;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
+        .monster:active {
+            transform: scale(0.9);
         }
-        #click-area img {
-            max-height: 80%;
-            max-width: 80%;
-            position: absolute;
-            transition: all 0.4s;
+        #upgrades {
+            margin-top: 20px;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            border: 2px solid #333;
         }
-        #progress-container {
-            margin: 15px 0 5px;
-        }
-        #race-track {
-            width: 100%;
-            height: 70px; /* Увеличена высота дорожки */
-            background: #222;
-            border-radius: 35px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(255, 0, 170, 0.4);
-        }
-        #runner {
-            position: absolute;
-            left: 0;
-            top: -5px; /* Поднят кот для лучшей видимости */
-            height: 80px; /* Увеличен размер кота */
-            transition: left 0.4s;
-            filter: drop-shadow(0 0 8px #00ffff);
-        }
-        #score {
-            font-size: 28px;
+        .upgrade-btn {
+            background: linear-gradient(135deg, #8b0000, #ff5555);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
             font-weight: bold;
-            color: #ff55ff;
-            text-shadow: 0 0 10px #ff55ff;
-            margin: 10px 0 5px;
-            padding: 8px;
+            transition: all 0.2s;
+            font-size: 14px;
         }
-        .explosion {
+        .upgrade-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px #ff0000;
+        }
+        .upgrade-btn:disabled {
+            background: #333;
+            cursor: not-allowed;
+        }
+        .damage-effect {
             position: absolute;
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle, rgba(255,0,170,0.8) 0%, rgba(255,0,170,0) 70%);
-            border-radius: 50%;
-            transform: scale(0);
-            animation: explode 0.6s forwards;
-            pointer-events: none;
-        }
-        @keyframes explode {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(4); opacity: 0; }
-        }
-        .click-effect {
-            position: absolute;
-            font-size: 26px;
-            color: #ff55ff;
-            animation: float 1.2s ease-out;
-            opacity: 0;
-            pointer-events: none;
-            text-shadow: 0 0 8px #ff55ff;
+            color: #ff5555;
             font-weight: bold;
+            font-size: 24px;
+            animation: float-up 1s forwards;
+            pointer-events: none;
+            text-shadow: 0 0 5px #ff0000;
         }
-        @keyframes float {
+        @keyframes float-up {
             0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-120px); opacity: 0; }
+            100% { transform: translateY(-50px); opacity: 0; }
         }
-        #final-screen {
-            display: none;
+        .meat-effect {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
+            color: #ff6b6b;
+            font-weight: bold;
+            animation: meat-float 1s forwards;
+            pointer-events: none;
         }
-        #final-score {
-            font-size: 42px;
-            color: #ff00aa;
-            margin-bottom: 20px;
-            text-shadow: 0 0 15px #ff00aa;
+        @keyframes meat-float {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px) translateX(20px); opacity: 0; }
+        }
+        #monster-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        #monster-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(139, 0, 0, 0.7);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <div id="game">
-        <div id="timer">20</div>
-        <div id="joke-display">Кликай на мемы — взрывай их!</div>
-        
-        <div id="click-area">
-            <img src="https://media.tenor.com/pESkzhvZiVMAAAAM/persona-4-tohru-adachi.gif" alt="Мем">
-        </div>
-        
-        <div id="progress-container">
-            <div id="race-track">
-                <img id="runner" src="https://steamuserimages-a.akamaihd.net/ugc/968732126365580783/01E8F22A95D4F677D68A271488D73261B2056533/" alt="Бегущий кот">
+    <div id="game-container">
+        <div id="header">
+            <div>
+                <div id="money">🥩 0</div>
+                <div id="xp-container">
+                    <div id="xp-bar"></div>
+                </div>
             </div>
+            <div id="level">Уровень: 1</div>
         </div>
         
-        <div id="score">0 кликов</div>
+        <div id="monster-area">
+            <div id="monster-count">Монстров: 0/20</div>
+        </div>
         
-        <div id="final-screen">
-            <div id="final-joke"></div>
-            <div id="final-score"></div>
+        <div id="upgrades">
+            <button class="upgrade-btn" onclick="buyUpgrade('damage')">
+                Урон: +1<br>
+                <span id="damage-cost">Цена: 10 🥩</span>
+            </button>
+            <button class="upgrade-btn" onclick="buyUpgrade('crit')">
+                Крит: +5%<br>
+                <span id="crit-cost">Цена: 25 🥩</span>
+            </button>
+            <button class="upgrade-btn" onclick="buyUpgrade('coins')">
+                Мяса: +1<br>
+                <span id="coins-cost">Цена: 50 🥩</span>
+            </button>
+            <button class="upgrade-btn" onclick="buyUpgrade('auto')">
+                Автоатака<br>
+                <span id="auto-cost">Цена: 100 🥩</span>
+            </button>
         </div>
     </div>
 
     <script>
         // Игровые переменные
-        let score = 0;
-        let timeLeft = 20;
-        let gameActive = false;
-        let timer;
-        let gameStarted = false;
-        let jokesHistory = [];
-        let currentJoke = "";
-
-        // Мемные гифки
-        const memeGifs = [
-            "https://media.tenor.com/pESkzhvZiVMAAAAM/persona-4-tohru-adachi.gif",
-            "https://media.tenor.com/PCzLwrwdnhIAAAAM/sonic-screaming.gif",
-            "https://media.tenor.com/nDibhS2jNBgAAAAM/metaphor-refantazio-persona-3.gif",
-            "https://media.tenor.com/y65hp98AauoAAAAm/lol-so-fun.webp",
-            "https://media.tenor.com/0S1Dhb2UIVwAAAAM/esquie-mon-ami.gif",
-            "https://media.tenor.com/QEq7E9CIctIAAAA1/lebonbon-meme.webp",
-            "https://media.tenor.com/rgJleMzUa8MAAAAM/bailes.gif",
-            "https://media.tenor.com/IqGSSMAeMrgAAAA1/canp.webp",
-			"https://media.tenor.com/bit5AFW4T10AAAAM/cat-cat-meme.gif",
-            "https://media.tenor.com/W92_0Xh2XTMAAAAm/kuchisake-0nna-nexbot.webp",
-            "https://media.tenor.com/6NsPXmwxOBYAAAAm/cursed-mario-cursed.webp",
-            "https://media.tenor.com/S03FliK9dXgAAAA1/mikujo-persona-3.webp"
-			
+        let meat = 0;
+        let xp = 0;
+        let level = 1;
+        let damage = 1;
+        let critChance = 0;
+        let meatPerKill = 1;
+        let autoDamage = 0;
+        let monsters = [];
+        let xpNeeded = 100;
+        const MAX_MONSTERS = 20;
+        
+        // Все 20 монстров
+        const allMonsters = [
+            "https://media.tenor.com/rpLjR-cCx6AAAAAm/scary-rooms-low-detailed.webp",
+            "https://media.tenor.com/bH_Sg_Sj2pQAAAAm/reaction-sticker.webp",
+            "https://media.tenor.com/BG0GTzfhNSQAAAAm/creepy-smile-interminablerooms.webp",
+            "https://media.tenor.com/CujnQ2J1YVIAAAAm/colin-raff-grotesque.webp",
+            "https://media.tenor.com/fVaaAdx7D2cAAAAm/ahhhhhhhhhhhhhhh-scream.webp",
+            "https://media.tenor.com/45QcJKVT6GwAAAAm/walkin-creepy.webp",
+            "https://media.tenor.com/NvDVAAN8zWUAAAAm/colin-raff-grotesque.webp",
+            "https://media.tenor.com/mYj_JxuGs_gAAAAm/colin-raff-grotesque.webp",
+            "https://media.tenor.com/2UmsgJYp1lYAAAAm/specimen-11-spooky%27s-jumpscare-mansion-monster.webp",
+            "https://media.tenor.com/pQZHntZHp8sAAAAm/colin-raff-grotesque.webp",
+            "https://media.tenor.com/fBalrgNjIkMAAAAm/fnf-blueballs-incident-blueballs-incident.webp",
+            "https://media.tenor.com/BUMvmmFBr94AAAAm/darkness-takeover-stewie-griffin-monster-pibby.webp",
+            "https://media.tenor.com/XgybbRKEIcIAAAAm/guilty-gear-guilty-gear-strive.webp",
+            "https://media.tenor.com/NZIvWfFn-3oAAAAj/walter-smtiv.gif",
+            "https://media.tenor.com/Zj77W0D8XRYAAAAm/pot-of-greed-smug-jug.webp",
+            "https://media.tenor.com/3CBkaSCLIaQAAAAm/peach-scary.webp",
+            "https://media.tenor.com/3SF5gE8peSsAAAAm/chicky-twerk.webp",
+            "https://media.tenor.com/jVv2TNkGZi8AAAAj/kirby-jam.gif",
+            "https://media.tenor.com/9r2NMJC407YAAAAm/chibi-elizabeth.webp",
+            "https://media.tenor.com/jqdFR9LPU4cAAAAm/chibi-adachi.webp"
         ];
-
-        // 150+ шуток (программистские + пошлые загадки)
-        const jokes = [
-            "Почему программист всегда мокрый? Потому что он постоянно в потоках!",
-            "Как называют программиста на пляже? Безтолочь!",
-            "Почему программисты не любят природу? Там нет интерфейса!",
-            "Что сказал null undefined? Ничего, оба упали!",
-            "Почему JavaScript разработчик не мог жениться? Потому что не мог найти Promise!",
-            "Как объяснить бабушке что такое баг? 'Вот в моё время были жуки в тараканах, а не в компьютерах!'",
-            "Почему React разработчик умер? Потому что не смог обновить state!",
-            "Что сказал git при аресте? 'Я делал merge, не разбирался!'",
-            "Почему Python разработчик похудел? Перешёл с Django на Flask!",
-            "Какой напиток любит backend разработчик? Серверный чай!",
-            "Какая женщина сначала трется около тебя, а потом требует деньги? (Кондуктор в трамвае)",
-            "Что длинное и твёрдое у программиста утром? (Стоячий код)",
-            "Чем больше берешь, тем больше оставляешь. Что это? (Шаги)",
-            "Что можно сломать, даже если это никто не трогает? (Обещание)",
-            "Какая разница между мужем и любовником? 45 минут!",
-            "Что общего между женой и пулей? И то, и другое сначала вылетает, а потом проблемы!",
-            "Почему мужчины после секса засыпают? Потому что даже Windows говорит 'Завершение работы...'",
-            "Что сказал презерватив перед смертью? 'Я кончил!'",
-			"Чтобы спереди погладить нужно сзади полизать (марка)",
-            "Почему у мужчин утро начинается с стояка? Чтобы не забыть, что они ещё что-то могут поднять!",
-            "Что сказал гинеколог пациентке с большой грудью? 'Извините, я тут немного заблудился!'"
-            // ... (добавьте ещё 130+ шуток)
-        ];
-
-        // Получить уникальную случайную шутку
-        function getRandomJoke() {
-            if (jokesHistory.length >= jokes.length) jokesHistory = [];
-            
-            let joke;
-            do {
-                joke = jokes[Math.floor(Math.random() * jokes.length)];
-            } while (jokesHistory.includes(joke));
-            
-            jokesHistory.push(joke);
-            return joke;
-        }
-
-        // Начало игры при первом клике
-        document.getElementById("click-area").onclick = (e) => {
-            if (!gameStarted) {
-                gameStarted = true;
-                startGame();
-                return;
-            }
-            
-            if (!gameActive) return;
-            
-            score++;
-            updateScore();
-            
-            // Эффект взрыва
-            createExplosion(e.clientX, e.clientY);
-            
-            // Анимация мема
-            animateMeme();
-            
-            // Показ шутки (каждые 2-4 клика)
-            if (score % Math.floor(Math.random() * 3 + 2) === 0) {
-                showJoke();
-            }
-            
-            // Обновление прогресса
-            updateProgress();
+        
+        // Цены улучшений
+        const upgradeCosts = {
+            damage: 10,
+            crit: 25,
+            coins: 50,
+            auto: 100
         };
-
-        // Создать эффект взрыва
-        function createExplosion(x, y) {
-            const explosion = document.createElement("div");
-            explosion.className = "explosion";
-            explosion.style.left = (x - 50) + "px";
-            explosion.style.top = (y - 50) + "px";
-            document.getElementById("click-area").appendChild(explosion);
-            setTimeout(() => explosion.remove(), 600);
+        
+        // Обновить счетчик монстров
+        function updateMonsterCount() {
+            document.getElementById("monster-count").textContent = `Монстров: ${monsters.length}/${MAX_MONSTERS}`;
         }
-
-        // Анимация мема
-        function animateMeme() {
-            const meme = document.querySelector("#click-area img");
-            meme.style.transform = "scale(1.8) rotate(10deg)";
-            meme.style.opacity = "0";
+        
+        // Получить доступных монстров (новый монстр каждый уровень)
+        function getAvailableMonsters() {
+            return allMonsters.slice(0, Math.min(level, allMonsters.length));
+        }
+        
+        // Обновить XP бар
+        function updateXpBar() {
+            const percent = (xp / xpNeeded) * 100;
+            document.getElementById("xp-bar").style.width = `${percent}%`;
+        }
+        
+        // Спавн монстров
+        function spawnMonster() {
+            if (monsters.length >= MAX_MONSTERS) return;
             
-            setTimeout(() => {
-                meme.src = memeGifs[Math.floor(Math.random() * memeGifs.length)];
-                meme.style.transform = "scale(1) rotate(0)";
-                meme.style.opacity = "1";
-            }, 300);
+            const availableMonsters = getAvailableMonsters();
+            const monster = document.createElement("img");
+            monster.className = "monster";
+            
+            // Размер зависит от уровня
+            const size = 70 + Math.random() * 60;
+            const x = Math.random() * (document.getElementById("monster-area").offsetWidth - size);
+            const y = Math.random() * (document.getElementById("monster-area").offsetHeight - size);
+            
+            // Выбираем случайного монстра из доступных
+            monster.src = availableMonsters[Math.floor(Math.random() * availableMonsters.length)];
+            monster.style.width = `${size}px`;
+            monster.style.height = `${size}px`;
+            monster.style.left = `${x}px`;
+            monster.style.top = `${y}px`;
+            
+            // Информация о монстре (при наведении)
+            const monsterInfo = document.createElement("div");
+            monsterInfo.id = "monster-info";
+            monsterInfo.textContent = `HP: ${Math.floor(level * 1.5)}`;
+            monsterInfo.style.display = "none";
+            
+            monster.onmouseenter = () => {
+                monsterInfo.style.display = "block";
+            };
+            monster.onmouseleave = () => {
+                monsterInfo.style.display = "none";
+            };
+            
+            monster.onclick = function(e) {
+                const isCrit = Math.random() * 100 < critChance;
+                const totalDamage = isCrit ? damage * 3 : damage;
+                
+                // Эффект урона
+                const damageText = document.createElement("div");
+                damageText.className = "damage-effect";
+                damageText.textContent = `-${totalDamage}${isCrit ? "!" : ""}`;
+                damageText.style.left = `${e.clientX - 20}px`;
+                damageText.style.top = `${e.clientY - 20}px`;
+                document.getElementById("monster-area").appendChild(damageText);
+                
+                // Удаление монстра
+                this.remove();
+                monsterInfo.remove();
+                monsters = monsters.filter(m => m.monster !== this);
+                updateMonsterCount();
+                
+                // Награда (зависит от уровня)
+                const meatEarned = meatPerKill * (isCrit ? 2 : 1) * level;
+                addMeat(meatEarned);
+                addXp(meatEarned);
+                
+                // Эффект мяса
+                const meatText = document.createElement("div");
+                meatText.className = "meat-effect";
+                meatText.textContent = `+${meatEarned} 🥩`;
+                meatText.style.left = `${e.clientX - 15}px`;
+                meatText.style.top = `${e.clientY - 15}px`;
+                document.getElementById("monster-area").appendChild(meatText);
+                
+                setTimeout(() => {
+                    damageText.remove();
+                    meatText.remove();
+                }, 1000);
+            };
+            
+            document.getElementById("monster-area").appendChild(monster);
+            document.getElementById("monster-area").appendChild(monsterInfo);
+            monsters.push({ monster, info: monsterInfo });
+            updateMonsterCount();
+            
+        // Добавление мяса
+        function addMeat(amount) {
+            meat += amount;
+            document.getElementById("money").textContent = `🥩 ${meat}`;
+            updateUpgradeButtons();
         }
-
-        // Показать шутку
-        function showJoke() {
-            currentJoke = getRandomJoke();
-            document.getElementById("joke-display").textContent = currentJoke;
-            document.getElementById("joke-display").style.animation = "none";
-            setTimeout(() => {
-                document.getElementById("joke-display").style.animation = "pulse 0.8s";
-            }, 10);
+        
+        // Добавление XP
+        function addXp(amount) {
+            xp += amount;
+            if (xp >= xpNeeded) {
+                levelUp();
+            }
+            updateXpBar();
         }
-
-        // Обновить прогресс
-        function updateProgress() {
-            const progress = Math.min(score / 100, 1);
-            document.getElementById("runner").style.left = `calc(${progress * 100}% - 40px)`;
+        
+        // Повышение уровня
+        function levelUp() {
+            xp -= xpNeeded;
+            level++;
+            xpNeeded = Math.floor(xpNeeded * 1.5);
+            document.getElementById("level").textContent = `Уровень: ${level}`;
+            
+            // Новый монстр доступен
+            console.log(`Доступно монстров: ${getAvailableMonsters().length}`);
         }
-
+        
+        // Покупка улучшений
+        function buyUpgrade(type) {
+            const cost = upgradeCosts[type];
+            if (meat >= cost) {
+                meat -= cost;
+                document.getElementById("money").textContent = `🥩 ${meat}`;
+                
+                switch(type) {
+                    case 'damage':
+                        damage += 1;
+                        upgradeCosts.damage = Math.floor(upgradeCosts.damage * 1.5);
+                        document.getElementById("damage-cost").textContent = `Цена: ${upgradeCosts.damage} 🥩`;
+                        break;
+                    case 'crit':
+                        critChance += 5;
+                        upgradeCosts.crit = Math.floor(upgradeCosts.crit * 1.5);
+                        document.getElementById("crit-cost").textContent = `Цена: ${upgradeCosts.crit} 🥩`;
+                        break;
+                    case 'coins':
+                        meatPerKill += 1;
+                        upgradeCosts.coins = Math.floor(upgradeCosts.coins * 1.5);
+                        document.getElementById("coins-cost").textContent = `Цена: ${upgradeCosts.coins} 🥩`;
+                        break;
+                    case 'auto':
+                        autoDamage += 1;
+                        upgradeCosts.auto = Math.floor(upgradeCosts.auto * 2);
+                        document.getElementById("auto-cost").textContent = `Цена: ${upgradeCosts.auto} 🥩`;
+                        break;
+                }
+                
+                updateUpgradeButtons();
+            }
+        }
+        
+        // Обновление кнопок улучшений
+        function updateUpgradeButtons() {
+            document.querySelectorAll(".upgrade-btn").forEach(btn => {
+                const type = btn.onclick.toString().match(/buyUpgrade\('(.*?)'\)/)[1];
+                btn.disabled = meat < upgradeCosts[type];
+            });
+        }
+        
+        // Автоатака
+        function autoAttack() {
+            if (autoDamage > 0 && monsters.length > 0) {
+                const randomIndex = Math.floor(Math.random() * monsters.length);
+                const randomMonster = monsters[randomIndex].monster;
+                const event = {
+                    clientX: randomMonster.offsetLeft + randomMonster.offsetWidth/2,
+                    clientY: randomMonster.offsetTop + randomMonster.offsetHeight/2
+                };
+                randomMonster.onclick(event);
+            }
+        }
+        
         // Запуск игры
+        let spawnInterval;
         function startGame() {
-            gameActive = true;
-            score = 0;
-            timeLeft = 20;
-            jokesHistory = [];
-            updateScore();
-            showJoke();
-            
-            // Таймер
-            timer = setInterval(() => {
-                timeLeft--;
-                document.getElementById("timer").textContent = timeLeft;
-                
-                if (timeLeft <= 5) {
-                    document.getElementById("timer").style.animation = "pulse 0.5s infinite";
-                }
-                
-                if (timeLeft <= 0) {
-                    endGame();
+            // Спавн монстров каждую секунду
+            spawnInterval = setInterval(() => {
+                if (monsters.length < MAX_MONSTERS) {
+                    spawnMonster();
                 }
             }, 1000);
-        }
-
-        // Окончание игры
-        function endGame() {
-            clearInterval(timer);
-            gameActive = false;
             
-            // Показываем финальный экран
-            document.getElementById("final-joke").textContent = currentJoke;
-            document.getElementById("final-score").textContent = `Твой результат: ${score} кликов!`;
-            document.getElementById("final-screen").style.display = "flex";
+            // Автоатака
+            setInterval(autoAttack, 1500);
             
-            // Кнопка рестарта
-            setTimeout(() => {
-                const restartBtn = document.createElement("button");
-                restartBtn.textContent = "Играть снова";
-                restartBtn.style = `
-                    padding: 12px 25px;
-                    background: #ff00aa;
-                    color: white;
-                    border: none;
-                    border-radius: 25px;
-                    font-size: 18px;
-                    cursor: pointer;
-                    margin-top: 20px;
-                    transition: all 0.3s;
-                `;
-                restartBtn.onmouseover = () => {
-                    restartBtn.style.background = "#00ffff";
-                    restartBtn.style.transform = "scale(1.05)";
-                };
-                restartBtn.onmouseout = () => {
-                    restartBtn.style.background = "#ff00aa";
-                    restartBtn.style.transform = "scale(1)";
-                };
-                restartBtn.onclick = () => {
-                    document.getElementById("final-screen").style.display = "none";
-                    document.getElementById("final-screen").removeChild(restartBtn);
-                    gameStarted = false;
-                    document.getElementById("timer").style.animation = "";
-                    document.getElementById("click-area").innerHTML = 
-                        '<img src="https://media.tenor.com/pESkzhvZiVMAAAAM/persona-4-tohru-adachi.gif" alt="Мем">';
-                };
-                document.getElementById("final-screen").appendChild(restartBtn);
-            }, 1000);
-        }
-
-        // Обновление счета
-        function updateScore() {
-            document.getElementById("score").textContent = `${score} кликов`;
+            // Первый монстр
+            setTimeout(spawnMonster, 300);
             
-            // Эффект при клике
-            const effect = document.createElement("div");
-            effect.className = "click-effect";
-            effect.textContent = `+1`;
-            effect.style.left = (Math.random() * 70 + 15) + "%";
-            effect.style.top = (Math.random() * 50 + 25) + "%";
-            document.getElementById("click-area").appendChild(effect);
-            setTimeout(() => effect.remove(), 1200);
+            // Инициализация интерфейса
+            updateXpBar();
+            updateMonsterCount();
         }
+        
+        // Начинаем игру
+        startGame();
+        updateUpgradeButtons();
     </script>
 </body>
 </html>

@@ -2,9 +2,8 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ultimate Monster Crusher</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             font-family: 'Arial Black', sans-serif;
@@ -14,6 +13,7 @@
             padding: 0;
             user-select: none;
             overflow: hidden;
+            touch-action: manipulation;
         }
         #game-container {
             max-width: 800px;
@@ -51,7 +51,6 @@
             width: 0%;
             background: linear-gradient(90deg, #ff5555, #ff9e00);
             transition: width 0.3s;
-            will-change: width;
         }
         #monster-area {
             height: 55vh;
@@ -61,13 +60,14 @@
             overflow: hidden;
             border: 3px solid #8b0000;
             box-shadow: 0 0 20px rgba(139, 0, 0, 0.7);
+            touch-action: manipulation;
         }
         .monster {
             position: absolute;
             cursor: pointer;
             transition: transform 0.1s;
             image-rendering: pixelated;
-            will-change: transform;
+            touch-action: manipulation;
         }
         .monster:active {
             transform: scale(0.9);
@@ -92,6 +92,7 @@
             font-weight: bold;
             transition: all 0.2s;
             font-size: 14px;
+            touch-action: manipulation;
         }
         .upgrade-btn:hover {
             transform: scale(1.05);
@@ -109,7 +110,6 @@
             animation: float-up 1s forwards;
             pointer-events: none;
             text-shadow: 0 0 5px #ff0000;
-            will-change: transform, opacity;
         }
         @keyframes float-up {
             0% { transform: translateY(0); opacity: 1; }
@@ -121,7 +121,6 @@
             font-weight: bold;
             animation: meat-float 1s forwards;
             pointer-events: none;
-            will-change: transform, opacity;
         }
         @keyframes meat-float {
             0% { transform: translateY(0); opacity: 1; }
@@ -180,14 +179,24 @@
                 Автоатака<br>
                 <span id="auto-cost">Цена: 100 🥩</span>
             </button>
-            <button class="upgrade-btn" onclick="shareGame()">
-                Поделиться игрой
-            </button>
         </div>
     </div>
 
     <script>
-        // Game variables
+        // Кэшированные элементы
+        const cachedElements = {
+            money: document.getElementById("money"),
+            level: document.getElementById("level"),
+            xpBar: document.getElementById("xp-bar"),
+            monsterCount: document.getElementById("monster-count"),
+            monsterArea: document.getElementById("monster-area"),
+            damageCost: document.getElementById("damage-cost"),
+            critCost: document.getElementById("crit-cost"),
+            coinsCost: document.getElementById("coins-cost"),
+            autoCost: document.getElementById("auto-cost")
+        };
+
+        // Игровые переменные
         let meat = 0;
         let xp = 0;
         let level = 1;
@@ -195,13 +204,13 @@
         let critChance = 0;
         let meatPerKill = 1;
         let autoDamage = 0;
-        let monsterIdCounter = 0;
-        const monsters = {};
+        let monsters = [];
         let xpNeeded = 50;
         const MAX_MONSTERS = 20;
         let totalClicks = 0;
-
-        // Monster image URLs
+        let activeTouches = {};
+        
+        // Все монстры
         const allMonsters = [
             "https://media.tenor.com/rpLjR-cCx6AAAAAm/scary-rooms-low-detailed.webp",
             "https://media.tenor.com/bH_Sg_Sj2pQAAAAm/reaction-sticker.webp",
@@ -224,374 +233,328 @@
             "https://media.tenor.com/9r2NMJC407YAAAAm/chibi-elizabeth.webp",
             "https://media.tenor.com/jqdFR9LPU4cAAAAm/chibi-adachi.webp"
         ];
-
-        // Upgrade costs
+        
+        // Цены улучшений
         const upgradeCosts = {
             damage: 10,
             crit: 25,
             coins: 50,
             auto: 100
         };
-
-        // DOM update batching
-        let needsUpdate = false;
-        const updateQueue = {};
-
-        function batchUpdateDOM() {
-            if (needsUpdate) {
-                if (updateQueue.money) {
-                    document.getElementById("money").textContent = `🥩 ${meat}`;
-                }
-                if (updateQueue.monsterCount) {
-                    document.getElementById("monster-count").textContent = `Монстров: ${Object.keys(monsters).length}/${MAX_MONSTERS}`;
-                }
-                if (updateQueue.xpBar) {
-                    document.getElementById("xp-bar").style.width = `${(xp / xpNeeded) * 100}%`;
-                }
-                if (updateQueue.level) {
-                    document.getElementById("level").textContent = `Уровень: ${level}`;
-                }
-                if (updateQueue.upgrades) {
-                    document.querySelectorAll(".upgrade-btn").forEach(btn => {
-                        const type = btn.onclick.toString().match(/buyUpgrade\('(.*?)'\)/)?.[1];
-                        if (type) btn.disabled = meat < upgradeCosts[type];
-                    });
-                }
-                needsUpdate = false;
-                Object.keys(updateQueue).forEach(key => delete updateQueue[key]);
-            }
-            requestAnimationFrame(batchUpdateDOM);
+        
+        // Обновить счетчик монстров
+        function updateMonsterCount() {
+            cachedElements.monsterCount.textContent = `Монстров: ${monsters.length}/${MAX_MONSTERS}`;
         }
-
-        // Preload monster images
-        const preloadImages = () => {
-            allMonsters.forEach(src => {
-                const img = new Image();
-                img.src = src;
-            });
-        };
-
-        // Get available monsters
+        
+        // Получить доступных монстров
         function getAvailableMonsters() {
             return allMonsters.slice(0, Math.min(level, allMonsters.length));
         }
-
-        // Calculate monster HP
-        function calculateMonsterHP() {
-            const hpFromLevel = 5 + (level * 5);
-            const hpFromClicks = Math.floor(totalClicks / 50);
-            return hpFromLevel + hpFromClicks;
+        
+        // Обновить XP бар
+        function updateXpBar() {
+            const percent = (xp / xpNeeded) * 100;
+            cachedElements.xpBar.style.width = `${percent}%`;
         }
-
-        // Spawn monster
+        
+        // Рассчитать HP монстра (сделано легче на первых уровнях)
+        function calculateMonsterHP() {
+            // Базовое HP зависит от уровня с мягким стартом
+            let baseHP;
+            if (level <= 5) {
+                baseHP = 3 + level; // Очень легкие монстры на первых 5 уровнях
+            } else if (level <= 10) {
+                baseHP = 8 + (level - 5) * 2; // Средняя сложность
+            } else if (level <= 20) {
+                baseHP = 18 + (level - 10) * 3; // Усложнение
+            } else {
+                baseHP = 48 + (level - 20) * 5; // Сложные монстры
+            }
+            
+            // Добавляем сложность в зависимости от общего количества кликов
+            const hpFromClicks = Math.floor(totalClicks / 100); // +1 HP за каждые 100 кликов
+            
+            return baseHP + hpFromClicks;
+        }
+        
+        // Обработка клика/тапа по монстру
+        function handleMonsterClick(monsterElement, monsterInfo, currentHP, monsterHP, clientX, clientY) {
+            totalClicks++;
+            const isCrit = Math.random() * 100 < critChance;
+            const totalDamage = isCrit ? damage * 3 : damage;
+            currentHP -= totalDamage;
+            
+            // Обновляем информацию о HP
+            monsterInfo.textContent = `HP: ${Math.max(0, currentHP)}/${monsterHP}`;
+            
+            // Эффект урона
+            showDamageEffect(totalDamage, isCrit, clientX, clientY);
+            
+            // Проверяем, убит ли монстр
+            if (currentHP <= 0) {
+                // Удаление монстра
+                monsterElement.remove();
+                monsterInfo.remove();
+                monsters = monsters.filter(m => m.monster !== monsterElement);
+                updateMonsterCount();
+                
+                // Награда (увеличена на первых уровнях)
+                let baseMeat;
+                if (level <= 5) {
+                    baseMeat = 5; // Больше мяса на первых уровнях
+                } else if (level <= 10) {
+                    baseMeat = 3 + level;
+                } else {
+                    baseMeat = level * 2;
+                }
+                
+                const meatEarned = meatPerKill * (isCrit ? 2 : 1) * baseMeat;
+                addMeat(meatEarned);
+                addXp(meatEarned);
+                
+                // Эффект мяса
+                showMeatEffect(meatEarned, clientX, clientY);
+            }
+            
+            return currentHP;
+        }
+        
+        // Показать эффект урона
+        function showDamageEffect(damage, isCrit, x, y) {
+            const damageText = document.createElement("div");
+            damageText.className = "damage-effect";
+            damageText.textContent = `-${damage}${isCrit ? "!" : ""}`;
+            damageText.style.left = `${x - 20}px`;
+            damageText.style.top = `${y - 20}px`;
+            cachedElements.monsterArea.appendChild(damageText);
+            
+            setTimeout(() => {
+                damageText.remove();
+            }, 1000);
+        }
+        
+        // Показать эффект мяса
+        function showMeatEffect(amount, x, y) {
+            const meatText = document.createElement("div");
+            meatText.className = "meat-effect";
+            meatText.textContent = `+${amount} 🥩`;
+            meatText.style.left = `${x - 15}px`;
+            meatText.style.top = `${y - 15}px`;
+            cachedElements.monsterArea.appendChild(meatText);
+            
+            setTimeout(() => {
+                meatText.remove();
+            }, 1000);
+        }
+        
+        // Спавн монстров
         function spawnMonster() {
-            if (Object.keys(monsters).length >= MAX_MONSTERS) return;
-
+            if (monsters.length >= MAX_MONSTERS) return;
+            
             const availableMonsters = getAvailableMonsters();
             const monster = document.createElement("img");
-            const id = monsterIdCounter++;
             monster.className = "monster";
-            const size = 70 + Math.random() * 60;
-            const x = Math.random() * (document.getElementById("monster-area").offsetWidth - size);
-            const y = Math.random() * (document.getElementById("monster-area").offsetHeight - size);
+            
+            // Размер и позиция (монстры меньше на первых уровнях)
+            const size = level <= 5 ? 50 + Math.random() * 40 : 
+                         level <= 10 ? 60 + Math.random() * 50 : 
+                         70 + Math.random() * 60;
+            
+            const x = Math.random() * (cachedElements.monsterArea.offsetWidth - size);
+            const y = Math.random() * (cachedElements.monsterArea.offsetHeight - size);
+            
+            // Выбираем случайного монстра
             monster.src = availableMonsters[Math.floor(Math.random() * availableMonsters.length)];
             monster.style.width = `${size}px`;
             monster.style.height = `${size}px`;
             monster.style.left = `${x}px`;
             monster.style.top = `${y}px`;
-
+            
+            // HP монстра
             const monsterHP = calculateMonsterHP();
             let currentHP = monsterHP;
-
+            
+            // Информация о монстре
             const monsterInfo = document.createElement("div");
-            monsterInfo.id = `monster-info-${id}`;
+            monsterInfo.id = "monster-info";
             monsterInfo.textContent = `HP: ${currentHP}/${monsterHP}`;
             monsterInfo.style.display = "none";
-
+            
+            // Обработчики событий для мыши
+            monster.onmouseenter = () => monsterInfo.style.display = "block";
+            monster.onmouseleave = () => monsterInfo.style.display = "none";
+            
+            // Обработчик клика
             monster.onclick = function(e) {
-                totalClicks++;
-                const isCrit = Math.random() * 100 < critChance;
-                const totalDamage = isCrit ? damage * 3 : damage;
-                currentHP -= totalDamage;
-                monsterInfo.textContent = `HP: ${Math.max(0, currentHP)}/${monsterHP}`;
-
-                const damageText = document.createElement("div");
-                damageText.className = "damage-effect";
-                damageText.textContent = `-${totalDamage}${isCrit ? "!" : ""}`;
-                damageText.style.left = `${e.clientX - 20}px`;
-                damageText.style.top = `${e.clientY - 20}px`;
-                document.getElementById("monster-area").appendChild(damageText);
-
-                if (currentHP <= 0) {
-                    this.remove();
-                    monsterInfo.remove();
-                    delete monsters[id];
-                    updateMonsterCount();
-
-                    const baseMeat = level * 2;
-                    const meatEarned = meatPerKill * (isCrit ? 2 : 1) * baseMeat;
-                    addMeat(meatEarned);
-                    addXp(meatEarned);
-
-                    const meatText = document.createElement("div");
-                    meatText.className = "meat-effect";
-                    meatText.textContent = `+${meatEarned} 🥩`;
-                    meatText.style.left = `${e.clientX - 15}px`;
-                    meatText.style.top = `${e.clientY - 15}px`;
-                    document.getElementById("monster-area").appendChild(meatText);
-
-                    setTimeout(() => {
-                        damageText.remove();
-                        meatText.remove();
-                    }, 1000);
-                } else {
-                    setTimeout(() => damageText.remove(), 1000);
+                currentHP = handleMonsterClick(
+                    this, monsterInfo, currentHP, monsterHP, 
+                    e.clientX, e.clientY
+                );
+            };
+            
+            // Обработчики для тач-устройств
+            monster.ontouchstart = function(e) {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    activeTouches[touch.identifier] = {
+                        monster: this,
+                        info: monsterInfo,
+                        currentHP,
+                        monsterHP,
+                        startX: touch.clientX,
+                        startY: touch.clientY
+                    };
+                    currentHP = handleMonsterClick(
+                        this, monsterInfo, currentHP, monsterHP,
+                        touch.clientX, touch.clientY
+                    );
                 }
             };
-
-            document.getElementById("monster-area").appendChild(monster);
-            document.getElementById("monster-area").appendChild(monsterInfo);
-            monsters[id] = { monster, info: monsterInfo };
+            
+            monster.ontouchmove = function(e) {
+                e.preventDefault();
+            };
+            
+            monster.ontouchend = function(e) {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    delete activeTouches[touch.identifier];
+                }
+            };
+            
+            // Добавляем монстра на поле
+            cachedElements.monsterArea.appendChild(monster);
+            cachedElements.monsterArea.appendChild(monsterInfo);
+            monsters.push({ monster, info: monsterInfo, currentHP: () => currentHP });
             updateMonsterCount();
         }
-
-        // Handle touch events for multitouch
-        function handleTouch(event) {
-            event.preventDefault();
-            const touches = event.changedTouches;
-            const monsterArea = document.getElementById("monster-area");
-
-            for (let i = 0; i < touches.length; i++) {
-                const touch = touches[i];
-                const touchX = touch.clientX - monsterArea.getBoundingClientRect().left;
-                const touchY = touch.clientY - monsterArea.getBoundingClientRect().top;
-
-                for (let id in monsters) {
-                    const { monster } = monsters[id];
-                    const rect = monster.getBoundingClientRect();
-                    const monsterLeft = rect.left - monsterArea.getBoundingClientRect().left;
-                    const monsterTop = rect.top - monsterArea.getBoundingClientRect().top;
-
-                    if (
-                        touchX >= monsterLeft &&
-                        touchX <= monsterLeft + rect.width &&
-                        touchY >= monsterTop &&
-                        touchY <= monsterTop + rect.height
-                    ) {
-                        const simulatedEvent = {
-                            clientX: touch.clientX,
-                            clientY: touch.clientY
-                        };
-                        monster.onclick(simulatedEvent);
-                    }
-                }
-            }
-        }
-
-        // Update monster count
-        function updateMonsterCount() {
-            updateQueue.monsterCount = true;
-            needsUpdate = true;
-        }
-
-        // Update XP bar
-        function updateXpBar() {
-            updateQueue.xpBar = true;
-            needsUpdate = true;
-        }
-
-        // Add meat
+        
+        // Добавление мяса
         function addMeat(amount) {
             meat += amount;
-            updateQueue.money = true;
-            updateQueue.upgrades = true;
-            needsUpdate = true;
+            cachedElements.money.textContent = `🥩 ${meat}`;
+            updateUpgradeButtons();
         }
-
-        // Add XP
+        
+        // Добавление XP (увеличено на первых уровнях)
         function addXp(amount) {
-            xp += amount;
+            // Бонус XP на первых уровнях
+            const xpBonus = level <= 5 ? 1.5 : 
+                           level <= 10 ? 1.2 : 
+                           1;
+            
+            xp += Math.floor(amount * xpBonus);
             if (xp >= xpNeeded) {
                 levelUp();
             }
             updateXpBar();
         }
-
-        // Level up
+        
+        // Повышение уровня
         function levelUp() {
             xp -= xpNeeded;
             level++;
-            xpNeeded = Math.floor(xpNeeded * 1.3);
-            updateQueue.level = true;
-            updateQueue.xpBar = true;
-            needsUpdate = true;
-            console.log(`Доступно монстров: ${getAvailableMonsters().length}`);
+            // Мягкий рост необходимого XP на первых уровнях
+            xpNeeded = level <= 5 ? Math.floor(xpNeeded * 1.2) :
+                       level <= 10 ? Math.floor(xpNeeded * 1.3) :
+                       Math.floor(xpNeeded * 1.5);
+            
+            cachedElements.level.textContent = `Уровень: ${level}`;
+            
+            // Сообщение о новом монстре
+            if (level <= allMonsters.length && level > 1) {
+                console.log(`Новый монстр доступен! Всего монстров: ${getAvailableMonsters().length}`);
+            }
         }
-
-        // Buy upgrades
+        
+        // Покупка улучшений
         function buyUpgrade(type) {
             const cost = upgradeCosts[type];
             if (meat >= cost) {
                 meat -= cost;
+                cachedElements.money.textContent = `🥩 ${meat}`;
+                
                 switch(type) {
                     case 'damage':
                         damage += 1;
                         upgradeCosts.damage = Math.floor(upgradeCosts.damage * 1.5);
-                        document.getElementById("damage-cost").textContent = `Цена: ${upgradeCosts.damage} 🥩`;
+                        cachedElements.damageCost.textContent = `Цена: ${upgradeCosts.damage} 🥩`;
                         break;
                     case 'crit':
                         critChance += 5;
                         upgradeCosts.crit = Math.floor(upgradeCosts.crit * 1.5);
-                        document.getElementById("crit-cost").textContent = `Цена: ${upgradeCosts.crit} 🥩`;
+                        cachedElements.critCost.textContent = `Цена: ${upgradeCosts.crit} 🥩`;
                         break;
                     case 'coins':
                         meatPerKill += 1;
                         upgradeCosts.coins = Math.floor(upgradeCosts.coins * 1.5);
-                        document.getElementById("coins-cost").textContent = `Цена: ${upgradeCosts.coins} 🥩`;
+                        cachedElements.coinsCost.textContent = `Цена: ${upgradeCosts.coins} 🥩`;
                         break;
                     case 'auto':
                         autoDamage += 1;
                         upgradeCosts.auto = Math.floor(upgradeCosts.auto * 2);
-                        document.getElementById("auto-cost").textContent = `Цена: ${upgradeCosts.auto} 🥩`;
+                        cachedElements.autoCost.textContent = `Цена: ${upgradeCosts.auto} 🥩`;
                         break;
                 }
- offenbar
-                updateQueue.money = true;
-                updateQueue.upgrades = true;
-                needsUpdate = true;
+                
+                updateUpgradeButtons();
             }
         }
-
-        // Update upgrade buttons
+        
+        // Обновление кнопок улучшений
         function updateUpgradeButtons() {
-            updateQueue.upgrades = true;
-            needsUpdate = true;
-        }
-
-        // Auto-attack
-        function autoAttack() {
-            if (autoDamage > 0 && Object.keys(monsters).length > 0) {
-                const ids = Object.keys(monsters);
-                const randomId = ids[Math.floor(Math.random() * ids.length)];
-                const { monster, info } = monsters[randomId];
-                const isCrit = Math.random() * 100 < critChance;
-                const totalDamage = isCrit ? autoDamage * 3 : autoDamage;
-                let currentHP = parseInt(info.textContent.match(/HP: (\d+)/)[1]) - totalDamage;
-                const monsterHP = parseInt(info.textContent.match(/\/(\d+)/)[1]);
-
-                info.textContent = `HP: ${Math.max(0, currentHP)}/${monsterHP}`;
-
-                const damageText = document.createElement("div");
-                damageText.className = "damage-effect";
-                damageText.textContent = `-${totalDamage}${isCrit ? "!" : ""}`;
-                damageText.style.left = `${monster.offsetLeft + monster.offsetWidth / 2}px`;
-                damageText.style.top = `${monster.offsetTop + monster.offsetHeight / 2}px`;
-                document.getElementById("monster-area").appendChild(damageText);
-
-                if (currentHP <= 0) {
-                    monster.remove();
-                    info.remove();
-                    delete monsters[randomId];
-                    updateMonsterCount();
-
-                    const baseMeat = level * 2;
-                    const meatEarned = meatPerKill * (isCrit ? 2 : 1) * baseMeat;
-                    addMeat(meatEarned);
-                    addXp(meatEarned);
-
-                    const meatText = document.createElement("div");
-                    meatText.className = "meat-effect";
-                    meatText.textContent = `+${meatEarned} 🥩`;
-                    meatText.style.left = `${monster.offsetLeft + monster.offsetWidth / 2}px`;
-                    meatText.style.top = `${monster.offsetTop + monster.offsetHeight / 2}px`;
-                    document.getElementById("monster-area").appendChild(meatText);
-
-                    setTimeout(() => {
-                        damageText.remove();
-                        meatText.remove();
-                    }, 1000);
-                } else {
-                    setTimeout(() => damageText.remove(), 1000);
-                }
-            }
-        }
-
-        // Initialize Telegram Web App
-        function initTelegramWebApp() {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const webApp = window.Telegram.WebApp;
-                webApp.ready();
-                webApp.expand();
-                return webApp;
-            } else {
-                console.error("Telegram Web App is not available.");
-                return null;
-            }
-        }
-
-        // Share game via Telegram
-        function shareGame() {
-            const webApp = initTelegramWebApp();
-            if (!webApp) return;
-
-            const botUsername = "@YourGameBot"; // Replace with your bot's username
-            const gameUrl = window.location.href;
-            const shareText = `Играй в Ultimate Monster Crusher! Мой уровень: ${level}, Мяса: ${meat} 🥩! ${gameUrl}`;
-
-            webApp.sendData(JSON.stringify({
-                action: "share",
-                text: shareText,
-                botUsername: botUsername
-            }));
-        }
-
-        // Start game
-        function startGame() {
-            preloadImages();
-            initTelegramWebApp();
-
-            const monsterArea = document.getElementById("monster-area");
-            monsterArea.addEventListener("touchstart", handleTouch, { passive: false });
-            monsterArea.addEventListener("touchmove", handleTouch, { passive: false });
-
-            monsterArea.addEventListener("mousemove", (e) => {
-                const mouseX = e.clientX - monsterArea.getBoundingClientRect().left;
-                const mouseY = e.clientY - monsterArea.getBoundingClientRect().top;
-
-                for (let id in monsters) {
-                    const { monster, info } = monsters[id];
-                    const rect = monster.getBoundingClientRect();
-                    const monsterLeft = rect.left - monsterArea.getBoundingClientRect().left;
-                    const monsterTop = rect.top - monsterArea.getBoundingClientRect().top;
-
-                    if (
-                        mouseX >= monsterLeft &&
-                        mouseX <= monsterLeft + rect.width &&
-                        mouseY >= monsterTop &&
-                        mouseY <= monsterTop + rect.height
-                    ) {
-                        info.style.display = "block";
-                    } else {
-                        info.style.display = "none";
-                    }
-                }
+            document.querySelectorAll(".upgrade-btn").forEach(btn => {
+                const type = btn.onclick.toString().match(/buyUpgrade\('(.*?)'\)/)[1];
+                btn.disabled = meat < upgradeCosts[type];
             });
-
-            const spawnInterval = setInterval(() => {
-                if (Object.keys(monsters).length < MAX_MONSTERS) {
+        }
+        
+        // Автоатака
+        function autoAttack() {
+            if (autoDamage <= 0 || monsters.length === 0) return;
+            
+            const attacksPerFrame = Math.min(3, autoDamage);
+            for (let i = 0; i < attacksPerFrame; i++) {
+                if (monsters.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * monsters.length);
+                    const monsterData = monsters[randomIndex];
+                    const monsterElement = monsterData.monster;
+                    const event = {
+                        clientX: monsterElement.offsetLeft + monsterElement.offsetWidth/2,
+                        clientY: monsterElement.offsetTop + monsterElement.offsetHeight/2
+                    };
+                    monsterElement.onclick(event);
+                }
+            }
+        }
+        
+        // Запуск игры
+        function startGame() {
+            // Спавн монстров (чаще на первых уровнях)
+            const spawnInterval = level <= 5 ? 800 : 
+                                level <= 10 ? 1000 : 
+                                1200;
+            
+            setInterval(() => {
+                if (monsters.length < MAX_MONSTERS) {
                     spawnMonster();
                 }
-            }, 1000);
-
+            }, spawnInterval);
+            
+            // Автоатака
             setInterval(autoAttack, 1500);
+            
+            // Первый монстр
             setTimeout(spawnMonster, 300);
+            
+            // Инициализация интерфейса
             updateXpBar();
             updateMonsterCount();
             updateUpgradeButtons();
-            requestAnimationFrame(batchUpdateDOM);
         }
-
-        // Start the game
+        
+        // Начинаем игру
         startGame();
     </script>
 </body>

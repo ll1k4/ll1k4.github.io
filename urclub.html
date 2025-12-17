@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат с персонажами</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        
+        #app {
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .coins {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            border-right: 1px solid #e5e7eb;
+        }
+        
+        .chat-window {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #f9fafb;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .message {
+            background-color: white;
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #4f46e5;
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #4f46e5;
+        }
+        
+        .time {
+            color: #9ca3af;
+        }
+        
+        .message-content {
+            color: #374151;
+            line-height: 1.4;
+        }
+        
+        .online-users {
+            width: 250px;
+            padding: 15px;
+            background-color: #f9fafb;
+            overflow-y: auto;
+            border-left: 1px solid #e5e7eb;
+        }
+        
+        .online-users h3 {
+            margin-bottom: 15px;
+            color: #374151;
+            font-size: 1.2rem;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .user-item.active {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        
+        .character-preview {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            position: relative;
+        }
+        
+        .character-body {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .character-eyes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .character-clothes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            z-index: 2;
+        }
+        
+        .user-name {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .stage-area {
+            height: 200px;
+            background-color: #f1f5f9;
+            border-radius: 12px;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .character-on-stage {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            z-index: 5;
+        }
+        
+        .character-on-stage:hover {
+            transform: scale(1.05);
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .message-input:focus {
+            border-color: #4f46e5;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-shop {
+            background: linear-gradient(90deg, #059669, #10b981);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .close-modal:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .shop-content {
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .shop-items {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        .shop-item {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .shop-item:hover {
+            transform: translateY(-5px);
+            border-color: #4f46e5;
+        }
+        
+        .shop-item.selected {
+            border-color: #10b981;
+        }
+        
+        .shop-item-image {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            background-color: #f9fafb;
+            padding: 10px;
+        }
+        
+        .shop-item-info {
+            padding: 10px;
+            background-color: white;
+        }
+        
+        .shop-item-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #374151;
+        }
+        
+        .shop-item-price {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .price {
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .shop-sidebar {
+            width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .salary-btn {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .salary-btn:hover {
+            transform: translateY(-3px);
+        }
+        
+        .salary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .character-preview-large {
+            width: 100%;
+            height: 180px;
+            position: relative;
+            background-color: #f9fafb;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        
+        .setup-modal {
+            max-width: 500px;
+        }
+        
+        .setup-content {
+            padding: 30px;
+        }
+        
+        .setup-step {
+            margin-bottom: 25px;
+        }
+        
+        .setup-step h3 {
+            margin-bottom: 15px;
+            color: #374151;
+        }
+        
+        .gender-selector {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .gender-option {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .gender-option:hover {
+            border-color: #4f46e5;
+        }
+        
+        .gender-option.selected {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        
+        .gender-preview {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+        
+        .eyes-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .eye-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.2s;
+        }
+        
+        .eye-option.selected {
+            border-color: #4f46e5;
+        }
+        
+        .eye-option img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .username-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        
+        .setup-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .online-users {
+                width: 100%;
+                height: 150px;
+                border-left: none;
+                border-top: 1px solid #e5e7eb;
+            }
+            
+            .shop-content {
+                flex-direction: column;
+            }
+            
+            .shop-sidebar {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Настройка персонажа (показывается только при первом входе) -->
+        <div id="setupModal" class="modal active">
+            <div class="modal-content setup-modal">
+                <div class="modal-header">
+                    <h2>Создание персонажа</h2>
+                </div>
+                <div class="setup-content">
+                    <div class="setup-step">
+                        <h3>1. Выберите пол персонажа</h3>
+                        <div class="gender-selector">
+                            <div class="gender-option" data-gender="male">
+                                <div class="gender-preview">
+                                    <img src="https://drive.google.com/uc?export=view&id=1ia3KY762uHxblkqCJr6y0xd1NEmEZNWY" alt="Мужское тело" class="character-body">
+                                </div>
+                                <div>Мужской</div>
+                            </div>
+                            <div class="gender-option" data-gender="female">
+                                <div class="gender-preview">
+                                    <img src="https://drive.google.com/uc?export=view&id=1khsTyJEWR1omUhoGqiMT9deiGz6rHnza" alt="Женское тело" class="character-body">
+                                </div>
+                                <div>Женский</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <h3>2. Выберите глаза</h3>
+                        <div class="eyes-selector">
+                            <div class="eye-option selected" data-eyes="blue">
+                                <img src="https://drive.google.com/uc?export=view&id=1xZiEJQZevtezY6b8AtTKw_DTxAnlcKRK" alt="Голубые глаза">
+                            </div>
+                            <div class="eye-option" data-eyes="blue2">
+                                <img src="https://drive.google.com/uc?export=view&id=1IlujVhwrFqg5J-uBsSikk1-7VjSZ2C6M" alt="Голубые глаза (женские)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <h3>3. Введите ваш ник</h3>
+                        <input type="text" id="usernameInput" class="username-input" placeholder="Введите ваш никнейм" maxlength="20">
+                    </div>
+                    
+                    <div class="setup-buttons">
+                        <button id="saveCharacter" class="btn">Войти в чат</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Магазин -->
+        <div id="shopModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Магазин одежды</h2>
+                    <button class="close-modal" id="closeShop">&times;</button>
+                </div>
+                <div class="shop-content">
+                    <div class="shop-items" id="shopItems">
+                        <!-- Товары будут добавляться динамически -->
+                    </div>
+                    <div class="shop-sidebar">
+                        <button class="salary-btn" id="salaryButton">
+                            <div>Зарплата</div>
+                            <div>+8 монет</div>
+                            <div id="salaryTimer">Доступно сейчас</div>
+                        </button>
+                        
+                        <div class="character-preview-large" id="shopPreview">
+                            <!-- Предпросмотр персонажа с одеждой -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Основной интерфейс -->
+        <div class="header">
+            <h1>Чат с персонажами</h1>
+            <div class="user-info">
+                <div class="coins">
+                    <span id="coinsCount">100</span> <span>🪙</span>
+                </div>
+                <div id="currentUser">Гость</div>
+            </div>
+        </div>
+        
+        <div class="main-container">
+            <div class="chat-section">
+                <div class="chat-window" id="chatWindow">
+                    <!-- Сообщения будут добавляться здесь -->
+                    <div class="message">
+                        <div class="message-header">
+                            <span class="username">Система</span>
+                            <span class="time">Только что</span>
+                        </div>
+                        <div class="message-content">Добро пожаловать в чат! Начните общаться с другими участниками.</div>
+                    </div>
+                </div>
+                
+                <div class="stage-area" id="stageArea">
+                    <!-- Персонажи участников будут отображаться здесь -->
+                </div>
+                
+                <div class="input-area">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Введите сообщение...">
+                    <button class="btn" id="sendButton">Отправить</button>
+                    <button class="btn btn-shop" id="shopButton">Магазин</button>
+                </div>
+            </div>
+            
+            <div class="online-users">
+                <h3>Участники онлайн</h3>
+                <div id="onlineUsersList">
+                    <!-- Список участников будет добавляться динамически -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация приложения
+            const tg = window.Telegram.WebApp;
+            tg.expand();
+            
+            // Элементы интерфейса
+            const setupModal = document.getElementById('setupModal');
+            const shopModal = document.getElementById('shopModal');
+            const closeShopBtn = document.getElementById('closeShop');
+            const shopButton = document.getElementById('shopButton');
+            const salaryButton = document.getElementById('salaryButton');
+            const sendButton = document.getElementById('sendButton');
+            const messageInput = document.getElementById('messageInput');
+            const chatWindow = document.getElementById('chatWindow');
+            const stageArea = document.getElementById('stageArea');
+            const onlineUsersList = document.getElementById('onlineUsersList');
+            const coinsCount = document.getElementById('coinsCount');
+            const currentUser = document.getElementById('currentUser');
+            const saveCharacterBtn = document.getElementById('saveCharacter');
+            const usernameInput = document.getElementById('usernameInput');
+            const shopItems = document.getElementById('shopItems');
+            const shopPreview = document.getElementById('shopPreview');
+            const salaryTimer = document.getElementById('salaryTimer');
+            
+            // Данные приложения
+            let userData = {
+                id: Date.now().toString(),
+                username: '',
+                gender: 'male',
+                eyes: 'blue',
+                coins: 100,
+                clothes: [],
+                position: { x: 50, y: 50 }
+            };
+            
+            let onlineUsers = [];
+            let messages = [];
+            let shopItemsData = [];
+            let lastSalaryTime = 0;
+            
+            // Инициализация данных магазина
+            function initShopItems() {
+                shopItemsData = [
+                    { id: 1, name: 'Синяя кофта', price: 30, image: 'https://i.ibb.co/4M0q3Kz/blue-hoodie.png', type: 'top', gender: 'both' },
+                    { id: 2, name: 'Красная футболка', price: 20, image: 'https://i.ibb.co/K9n5G2C/red-tshirt.png', type: 'top', gender: 'both' },
+                    { id: 3, name: 'Чёрные штаны', price: 25, image: 'https://i.ibb.co/9qQ0Y3W/black-pants.png', type: 'bottom', gender: 'both' },
+                    { id: 4, name: 'Синие джинсы', price: 35, image: 'https://i.ibb.co/3s1VbqK/blue-jeans.png', type: 'bottom', gender: 'both' },
+                    { id: 5, name: 'Красное платье', price: 50, image: 'https://i.ibb.co/ZKZv3H4/red-dress.png', type: 'dress', gender: 'female' },
+                    { id: 6, name: 'Чёрная юбка', price: 30, image: 'https://i.ibb.co/LkLprL7/black-skirt.png', type: 'bottom', gender: 'female' },
+                    { id: 7, name: 'Стильные волосы', price: 40, image: 'https://i.ibb.co/fxFh5xW/cool-hair.png', type: 'hair', gender: 'both' },
+                    { id: 8, name: 'Кепка', price: 15, image: 'https://i.ibb.co/Km0gP0W/cap.png', type: 'hat', gender: 'both' }
+                ];
+                
+                renderShopItems();
+            }
+            
+            // Рендер товаров в магазине
+            function renderShopItems() {
+                shopItems.innerHTML = '';
+                
+                shopItemsData.forEach(item => {
+                    if (item.gender === 'both' || item.gender === userData.gender) {
+                        const isOwned = userData.clothes.includes(item.id);
+                        const isSelected = isOwned && userData.clothes.includes(item.id);
+                        
+                        const itemElement = document.createElement('div');
+                        itemElement.className = `shop-item ${isSelected ? 'selected' : ''}`;
+                        itemElement.innerHTML = `
+                            <img src="${item.image}" alt="${item.name}" class="shop-item-image">
+                            <div class="shop-item-info">
+                                <div class="shop-item-name">${item.name}</div>
+                                <div class="shop-item-price">
+                                    <span class="price">${item.price} 🪙</span>
+                                    ${isOwned ? '<span style="color: #10b981;">✓ Куплено</span>' : 
+                                      (userData.coins >= item.price ? 
+                                       '<button class="btn" style="padding: 5px 10px; font-size: 0.8rem;">Купить</button>' : 
+                                       '<span style="color: #ef4444;">Не хватает</span>')}
+                                </div>
+                            </div>
+                        `;
+                        
+                        if (!isOwned && userData.coins >= item.price) {
+                            itemElement.querySelector('button').addEventListener('click', () => buyItem(item));
+                        } else if (isOwned) {
+                            itemElement.addEventListener('click', () => selectClothing(item.id));
+                        }
+                        
+                        shopItems.appendChild(itemElement);
+                    }
+                });
+                
+                updateShopPreview();
+            }
+            
+            // Покупка предмета
+            function buyItem(item) {
+                if (userData.coins >= item.price) {
+                    userData.coins -= item.price;
+                    userData.clothes.push(item.id);
+                    coinsCount.textContent = userData.coins;
+                    saveUserData();
+                    renderShopItems();
+                    updateUserCharacter();
+                    
+                    // Показываем сообщение о покупке
+                    addMessage('Система', `Вы купили "${item.name}" за ${item.price} монет!`, true);
+                }
+            }
+            
+            // Выбор одежды для надевания
+            function selectClothing(itemId) {
+                // Если предмет уже выбран, снимаем его
+                if (userData.clothes.includes(itemId)) {
+                    const index = userData.clothes.indexOf(itemId);
+                    if (index > -1) {
+                        userData.clothes.splice(index, 1);
+                    }
+                } else {
+                    // Надеваем предмет
+                    userData.clothes.push(itemId);
+                }
+                
+                saveUserData();
+                renderShopItems();
+                updateUserCharacter();
+            }
+            
+            // Обновление предпросмотра в магазине
+            function updateShopPreview() {
+                shopPreview.innerHTML = '';
+                
+                // Тело
+                const bodyUrl = userData.gender === 'male' ? 
+                    'https://drive.google.com/uc?export=view&id=1ia3KY762uHxblkqCJr6y0xd1NEmEZNWY' : 
+                    'https://drive.google.com/uc?export=view&id=1khsTyJEWR1omUhoGqiMT9deiGz6rHnza';
+                
+                const bodyImg = document.createElement('img');
+                bodyImg.src = bodyUrl;
+                bodyImg.className = 'character-body';
+                bodyImg.style.position = 'absolute';
+                bodyImg.style.width = '100%';
+                bodyImg.style.height = '100%';
+                bodyImg.style.objectFit = 'contain';
+                shopPreview.appendChild(bodyImg);
+                
+                // Глаза
+                const eyesUrl = userData.eyes === 'blue' ? 
+                    'https://drive.google.com/uc?export=view&id=1xZiEJQZevtezY6b8AtTKw_DTxAnlcKRK' : 
+                    'https://drive.google.com/uc?export=view&id=1IlujVhwrFqg5J-uBsSikk1-7VjSZ2C6M';
+                
+                const eyesImg = document.createElement('img');
+                eyesImg.src = eyesUrl;
+                eyesImg.className = 'character-eyes';
+                eyesImg.style.position = 'absolute';
+                eyesImg.style.width = '100%';
+                eyesImg.style.height = '100%';
+                eyesImg.style.objectFit = 'contain';
+                shopPreview.appendChild(eyesImg);
+                
+                // Одежда
+                userData.clothes.forEach(clothingId => {
+                    const item = shopItemsData.find(i => i.id === clothingId);
+                    if (item) {
+                        const clothesImg = document.createElement('img');
+                        clothesImg.src = item.image;
+                        clothesImg.className = 'character-clothes';
+                        clothesImg.style.position = 'absolute';
+                        clothesImg.style.width = '100%';
+                        clothesImg.style.height = '100%';
+                        clothesImg.style.objectFit = 'contain';
+                        shopPreview.appendChild(clothesImg);
+                    }
+                });
+            }
+            
+            // Получение зарплаты
+            function getSalary() {
+                const now = Date.now();
+                const timeSinceLastSalary = now - lastSalaryTime;
+                
+                if (lastSalaryTime === 0 || timeSinceLastSalary >= 60000) {
+                    userData.coins += 8;
+                    lastSalaryTime = now;
+                    coinsCount.textContent = userData.coins;
+                    saveUserData();
+                    
+                    // Обновляем таймер
+                    updateSalaryTimer();
+                    
+                    // Блокируем кнопку на минуту
+                    salaryButton.disabled = true;
+                    setTimeout(() => {
+                        salaryButton.disabled = false;
+                        salaryTimer.textContent = 'Доступно сейчас';
+                    }, 60000);
+                    
+                    // Показываем сообщение
+                    addMessage('Система', `Вы получили зарплату в размере 8 монет!`, true);
+                }
+            }
+            
+            // Обновление таймера зарплаты
+            function updateSalaryTimer() {
+                if (lastSalaryTime === 0) {
+                    salaryTimer.textContent = 'Доступно сейчас';
+                    return;
+                }
+                
+                const now = Date.now();
+                const timeSinceLastSalary = now - lastSalaryTime;
+                const timeLeft = Math.max(0, 60000 - timeSinceLastSalary);
+                
+                if (timeLeft > 0) {
+                    const secondsLeft = Math.ceil(timeLeft / 1000);
+                    salaryTimer.textContent = `Доступно через ${secondsLeft} сек`;
+                } else {
+                    salaryTimer.textContent = 'Доступно сейчас';
+                }
+            }
+            
+            // Сохранение данных пользователя
+            function saveUserData() {
+                localStorage.setItem('chatUserData', JSON.stringify(userData));
+                localStorage.setItem('lastSalaryTime', lastSalaryTime.toString());
+            }
+            
+            // Загрузка данных пользователя
+            function loadUserData() {
+                const savedData = localStorage.getItem('chatUserData');
+                const savedSalaryTime = localStorage.getItem('lastSalaryTime');
+                
+                if (savedData) {
+                    userData = JSON.parse(savedData);
+                    
+                    // Обновляем интерфейс
+                    coinsCount.textContent = userData.coins;
+                    currentUser.textContent = userData.username;
+                    
+                    // Скрываем окно настройки
+                    setupModal.classList.remove('active');
+                    
+                    // Загружаем время последней зарплаты
+                    if (savedSalaryTime) {
+                        lastSalaryTime = parseInt(savedSalaryTime);
+                        updateSalaryTimer();
+                        
+                        // Проверяем, нужно ли разблокировать кнопку
+                        const now = Date.now();
+                        if (now - lastSalaryTime >= 60000) {
+                            salaryButton.disabled = false;
+                        } else {
+                            salaryButton.disabled = true;
+                            setTimeout(() => {
+                                salaryButton.disabled = false;
+                                salaryTimer.textContent = 'Доступно сейчас';
+                            }, 60000 - (now - lastSalaryTime));
+                        }
+                    }
+                    
+                    // Добавляем пользователя в онлайн
+                    addOnlineUser(userData);
+                    
+                    // Обновляем персонажа
+                    updateUserCharacter();
+                    
+                    return true;
+                }
+                return false;
+            }
+            
+            // Добавление пользователя в список онлайн
+            function addOnlineUser(user) {
+                // Проверяем, есть ли уже такой пользователь
+                const existingIndex = onlineUsers.findIndex(u => u.id === user.id);
+                
+                if (existingIndex === -1) {
+                    onlineUsers.push(user);
+                } else {
+                    onlineUsers[existingIndex] = user;
+                }
+                
+                renderOnlineUsers();
+            }
+            
+            // Рендер списка онлайн пользователей
+            function renderOnlineUsers() {
+                onlineUsersList.innerHTML = '';
+                
+                onlineUsers.forEach(user => {
+                    const userElement = document.createElement('div');
+                    userElement.className = `user-item ${user.id === userData.id ? 'active' : ''}`;
+                    
+                    // Создаем превью персонажа
+                    const preview = document.createElement('div');
+                    preview.className = 'character-preview';
+                    
+                    // Тело
+                    const bodyUrl = user.gender === 'male' ? 
+                        'https://drive.google.com/uc?export=view&id=1ia3KY762uHxblkqCJr6y0xd1NEmEZNWY' : 
+                        'https://drive.google.com/uc?export=view&id=1khsTyJEWR1omUhoGqiMT9deiGz6rHnza';
+                    
+                    const bodyImg = document.createElement('img');
+                    bodyImg.src = bodyUrl;
+                    bodyImg.className = 'character-body';
+                    
+                    // Глаза
+                    const eyesUrl = user.eyes === 'blue' ? 
+                        'https://drive.google.com/uc?export=view&id=1xZiEJQZevtezY6b8AtTKw_DTxAnlcKRK' : 
+                        'https://drive.google.com/uc?export=view&id=1IlujVhwrFqg5J-uBsSikk1-7VjSZ2C6M';
+                    
+                    const eyesImg = document.createElement('img');
+                    eyesImg.src = eyesUrl;
+                    eyesImg.className = 'character-eyes';
+                    
+                    // Одежда
+                    const clothesFragment = document.createDocumentFragment();
+                    user.clothes.forEach(clothingId => {
+                        const item = shopItemsData.find(i => i.id === clothingId);
+                        if (item) {
+                            const clothesImg = document.createElement('img');
+                            clothesImg.src = item.image;
+                            clothesImg.className = 'character-clothes';
+                            clothesFragment.appendChild(clothesImg);
+                        }
+                    });
+                    
+                    preview.appendChild(bodyImg);
+                    preview.appendChild(eyesImg);
+                    preview.appendChild(clothesFragment);
+                    
+                    userElement.appendChild(preview);
+                    
+                    const nameElement = document.createElement('div');
+                    nameElement.className = 'user-name';
+                    nameElement.textContent = user.username;
+                    
+                    userElement.appendChild(nameElement);
+                    onlineUsersList.appendChild(userElement);
+                });
+                
+                renderCharactersOnStage();
+            }
+            
+            // Рендер персонажей на сцене
+            function renderCharactersOnStage() {
+                stageArea.innerHTML = '';
+                
+                onlineUsers.forEach(user => {
+                    const character = document.createElement('div');
+                    character.className = 'character-on-stage';
+                    character.style.left = `${user.position.x}%`;
+                    character.style.top = `${user.position.y}%`;
+                    character.dataset.userId = user.id;
+                    
+                    // Создаем контейнер для изображений персонажа
+                    const characterContainer = document.createElement('div');
+                    characterContainer.style.position = 'relative';
+                    characterContainer.style.width = '100%';
+                    characterContainer.style.height = '100%';
+                    
+                    // Тело
+                    const bodyUrl = user.gender === 'male' ? 
+                        'https://drive.google.com/uc?export=view&id=1ia3KY762uHxblkqCJr6y0xd1NEmEZNWY' : 
+                        'https://drive.google.com/uc?export=view&id=1khsTyJEWR1omUhoGqiMT9deiGz6rHnza';
+                    
+                    const bodyImg = document.createElement('img');
+                    bodyImg.src = bodyUrl;
+                    bodyImg.style.position = 'absolute';
+                    bodyImg.style.width = '100%';
+                    bodyImg.style.height = '100%';
+                    bodyImg.style.objectFit = 'contain';
+                    
+                    // Глаза
+                    const eyesUrl = user.eyes === 'blue' ? 
+                        'https://drive.google.com/uc?export=view&id=1xZiEJQZevtezY6b8AtTKw_DTxAnlcKRK' : 
+                        'https://drive.google.com/uc?export=view&id=1IlujVhwrFqg5J-uBsSikk1-7VjSZ2C6M';
+                    
+                    const eyesImg = document.createElement('img');
+                    eyesImg.src = eyesUrl;
+                    eyesImg.style.position = 'absolute';
+                    eyesImg.style.width = '100%';
+                    eyesImg.style.height = '100%';
+                    eyesImg.style.objectFit = 'contain';
+                    
+                    // Одежда
+                    const clothesFragment = document.createDocumentFragment();
+                    user.clothes.forEach(clothingId => {
+                        const item = shopItemsData.find(i => i.id === clothingId);
+                        if (item) {
+                            const clothesImg = document.createElement('img');
+                            clothesImg.src = item.image;
+                            clothesImg.style.position = 'absolute';
+                            clothesImg.style.width = '100%';
+                            clothesImg.style.height = '100%';
+                            clothesImg.style.objectFit = 'contain';
+                            clothesFragment.appendChild(clothesImg);
+                        }
+                    });
+                    
+                    characterContainer.appendChild(bodyImg);
+                    characterContainer.appendChild(eyesImg);
+                    characterContainer.appendChild(clothesFragment);
+                    
+                    character.appendChild(characterContainer);
+                    
+                    // Добавляем имя пользователя под персонажем
+                    const nameLabel = document.createElement('div');
+                    nameLabel.textContent = user.username;
+                    nameLabel.style.position = 'absolute';
+                    nameLabel.style.bottom = '-20px';
+                    nameLabel.style.left = '50%';
+                    nameLabel.style.transform = 'translateX(-50%)';
+                    nameLabel.style.whiteSpace = 'nowrap';
+                    nameLabel.style.fontSize = '12px';
+                    nameLabel.style.color = '#374151';
+                    nameLabel.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                    nameLabel.style.padding = '2px 6px';
+                    nameLabel.style.borderRadius = '4px';
+                    
+                    character.appendChild(nameLabel);
+                    
+                    // Добавляем возможность перемещения для своего персонажа
+                    if (user.id === userData.id) {
+                        character.style.cursor = 'move';
+                        
+                        let isDragging = false;
+                        let offsetX, offsetY;
+                        
+                        character.addEventListener('mousedown', startDrag);
+                        character.addEventListener('touchstart', startDragTouch);
+                        
+                        function startDrag(e) {
+                            isDragging = true;
+                            const rect = character.getBoundingClientRect();
+                            offsetX = e.clientX - rect.left;
+                            offsetY = e.clientY - rect.top;
+                            
+                            document.addEventListener('mousemove', drag);
+                            document.addEventListener('mouseup', stopDrag);
+                            e.preventDefault();
+                        }
+                        
+                        function startDragTouch(e) {
+                            isDragging = true;
+                            const touch = e.touches[0];
+                            const rect = character.getBoundingClientRect();
+                            offsetX = touch.clientX - rect.left;
+                            offsetY = touch.clientY - rect.top;
+                            
+                            document.addEventListener('touchmove', dragTouch);
+                            document.addEventListener('touchend', stopDrag);
+                            e.preventDefault();
+                        }
+                        
+                        function drag(e) {
+                            if (!isDragging) return;
+                            
+                            const stageRect = stageArea.getBoundingClientRect();
+                            let x = e.clientX - stageRect.left - offsetX;
+                            let y = e.clientY - stageRect.top - offsetY;
+                            
+                            // Ограничиваем перемещение в пределах сцены
+                            x = Math.max(0, Math.min(x, stageRect.width - character.offsetWidth));
+                            y = Math.max(0, Math.min(y, stageRect.height - character.offsetHeight));
+                            
+                            // Преобразуем в проценты
+                            const percentX = (x / stageRect.width) * 100;
+                            const percentY = (y / stageRect.height) * 100;
+                            
+                            character.style.left = `${percentX}%`;
+                            character.style.top = `${percentY}%`;
+                            
+                            // Обновляем позицию пользователя
+                            userData.position = { x: percentX, y: percentY };
+                            saveUserData();
+                        }
+                        
+                        function dragTouch(e) {
+                            if (!isDragging) return;
+                            
+                            const touch = e.touches[0];
+                            const stageRect = stageArea.getBoundingClientRect();
+                            let x = touch.clientX - stageRect.left - offsetX;
+                            let y = touch.clientY - stageRect.top - offsetY;
+                            
+                            // Ограничиваем перемещение в пределах сцены
+                            x = Math.max(0, Math.min(x, stageRect.width - character.offsetWidth));
+                            y = Math.max(0, Math.min(y, stageRect.height - character.offsetHeight));
+                            
+                            // Преобразуем в проценты
+                            const percentX = (x / stageRect.width) * 100;
+                            const percentY = (y / stageRect.height) * 100;
+                            
+                            character.style.left = `${percentX}%`;
+                            character.style.top = `${percentY}%`;
+                            
+                            // Обновляем позицию пользователя
+                            userData.position = { x: percentX, y: percentY };
+                            saveUserData();
+                        }
+                        
+                        function stopDrag() {
+                            isDragging = false;
+                            document.removeEventListener('mousemove', drag);
+                            document.removeEventListener('touchmove', dragTouch);
+                            document.removeEventListener('mouseup', stopDrag);
+                            document.removeEventListener('touchend', stopDrag);
+                        }
+                    }
+                    
+                    stageArea.appendChild(character);
+                });
+            }
+            
+            // Обновление персонажа пользователя
+            function updateUserCharacter() {
+                addOnlineUser(userData);
+            }
+            
+            // Добавление сообщения в чат
+            function addMessage(username, text, isSystem = false) {
+                const message = {
+                    id: Date.now().toString(),
+                    username,
+                    text,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    isSystem
+                };
+                
+                messages.push(message);
+                
+                // Ограничиваем количество сообщений
+                if (messages.length > 100) {
+                    messages = messages.slice(-100);
+                }
+                
+                renderMessages();
+            }
+            
+            // Рендер сообщений
+            function renderMessages() {
+                chatWindow.innerHTML = '';
+                
+                messages.forEach(message => {
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'message';
+                    messageElement.innerHTML = `
+                        <div class="message-header">
+                            <span class="username" style="color: ${message.isSystem ? '#059669' : '#4f46e5'}">${message.username}</span>
+                            <span class="time">${message.time}</span>
+                        </div>
+                        <div class="message-content">${message.text}</div>
+                    `;
+                    chatWindow.appendChild(messageElement);
+                });
+                
+                // Прокручиваем вниз
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+            
+            // Отправка сообщения
+            function sendMessage() {
+                const text = messageInput.value.trim();
+                
+                if (text && userData.username) {
+                    addMessage(userData.username, text);
+                    messageInput.value = '';
+                    
+                    // Фокус на поле ввода
+                    messageInput.focus();
+                }
+            }
+            
+            // Инициализация приложения
+            function initApp() {
+                // Пытаемся загрузить данные пользователя
+                const hasUserData = loadUserData();
+                
+                // Если данных нет, показываем окно настройки
+                if (!hasUserData) {
+                    setupModal.classList.add('active');
+                    
+                    // Обработчики для выбора пола
+                    document.querySelectorAll('.gender-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            document.querySelectorAll('.gender-option').forEach(opt => opt.classList.remove('selected'));
+                            this.classList.add('selected');
+                            userData.gender = this.dataset.gender;
+                            
+                            // Обновляем выбор глаз в зависимости от пола
+                            const eyesSelector = document.querySelector('.eyes-selector');
+                            if (userData.gender === 'male') {
+                                eyesSelector.innerHTML = `
+                                    <div class="eye-option selected" data-eyes="blue">
+                                        <img src="https://drive.google.com/uc?export=view&id=1xZiEJQZevtezY6b8AtTKw_DTxAnlcKRK" alt="Голубые глаза">
+                                    </div>
+                                `;
+                                userData.eyes = 'blue';
+                            } else {
+                                eyesSelector.innerHTML = `
+                                    <div class="eye-option selected" data-eyes="blue2">
+                                        <img src="https://drive.google.com/uc?export=view&id=1IlujVhwrFqg5J-uBsSikk1-7VjSZ2C6M" alt="Голубые глаза (женские)">
+                                    </div>
+                                `;
+                                userData.eyes = 'blue2';
+                            }
+                        });
+                    });
+                    
+                    // Обработчик сохранения персонажа
+                    saveCharacterBtn.addEventListener('click', function() {
+                        const username = usernameInput.value.trim();
+                        
+                        if (!username) {
+                            alert('Пожалуйста, введите ваш никнейм');
+                            return;
+                        }
+                        
+                        userData.username = username;
+                        currentUser.textContent = username;
+                        
+                        // Сохраняем данные
+                        saveUserData();
+                        
+                        // Скрываем окно настройки
+                        setupModal.classList.remove('active');
+                        
+                        // Добавляем пользователя в онлайн
+                        addOnlineUser(userData);
+                        
+                        // Добавляем приветственное сообщение
+                        addMessage('Система', `Добро пожаловать в чат, ${username}!`, true);
+                    });
+                    
+                    // Выбираем мужской пол по умолчанию
+                    document.querySelector('.gender-option[data-gender="male"]').click();
+                }
+                
+                // Инициализация магазина
+                initShopItems();
+                
+                // Добавляем тестовых пользователей
+                if (!hasUserData) {
+                    setTimeout(() => {
+                        const testUsers = [
+                            { id: 'test1', username: 'Алексей', gender: 'male', eyes: 'blue', coins: 150, clothes: [1, 3], position: { x: 20, y: 30 } },
+                            { id: 'test2', username: 'Мария', gender: 'female', eyes: 'blue2', coins: 200, clothes: [5, 7], position: { x: 70, y: 60 } }
+                        ];
+                        
+                        testUsers.forEach(user => addOnlineUser(user));
+                        
+                        // Добавляем тестовые сообщения
+                        setTimeout(() => {
+                            addMessage('Алексей', 'Привет всем! Как дела?');
+                        }, 1000);
+                        
+                        setTimeout(() => {
+                            addMessage('Мария', 'Привет! Всё отлично, только что купила новое платье в магазине!');
+                        }, 2000);
+                    }, 500);
+                }
+                
+                // Обновляем таймер зарплаты каждую секунду
+                setInterval(updateSalaryTimer, 1000);
+            }
+            
+            // Обработчики событий
+            shopButton.addEventListener('click', () => {
+                shopModal.classList.add('active');
+                updateShopPreview();
+            });
+            
+            closeShopBtn.addEventListener('click', () => {
+                shopModal.classList.remove('active');
+            });
+            
+            salaryButton.addEventListener('click', getSalary);
+            
+            sendButton.addEventListener('click', sendMessage);
+            
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Закрытие модальных окон при клике на фон
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Инициализируем приложение
+            initApp();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chat Mini App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .character-container {
+            position: relative;
+            width: 80px;
+            height: 120px;
+            background: transparent;
+        }
+        .character-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            background: transparent;
+            image-rendering: auto;
+        }
+        .shop-item {
+            transition: all 0.2s;
+            background: transparent;
+        }
+        .shop-item:hover {
+            transform: scale(1.1);
+        }
+        .shop-item.owned {
+            border-color: #22c55e !important;
+        }
+        .shop-item.equipped {
+            box-shadow: 0 0 10px 3px #3b82f6;
+        }
+        .shop-item img {
+            background: transparent;
+        }
+        .gender-btn img {
+            background: transparent;
+        }
+        .chat-message {
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .user-character {
+            position: absolute;
+            cursor: pointer;
+            transition: left 0.3s, top 0.3s;
+        }
+        .nickname-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-screen">
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="fixed inset-0 bg-gradient-to-br from-purple-900 to-blue-900 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4">
+            <h1 class="text-2xl font-bold text-center mb-6 text-purple-300">🎮 Добро пожаловать!</h1>
+            
+            <div class="mb-6">
+                <label class="block text-sm mb-2 text-gray-300">Выберите пол:</label>
+                <div class="flex gap-4 justify-center">
+                    <button onclick="selectGender('male')" id="maleBtn" class="gender-btn p-3 rounded-xl border-2 border-gray-600 hover:border-blue-500 transition-all">
+                        <img src="https://avatanplus.com/files/resources/mid/6943d3ba6e91b19b30f31055.png" class="w-20 h-28 object-contain">
+                        <p class="text-center mt-2 text-sm">Мужской</p>
+                    </button>
+                    <button onclick="selectGender('female')" id="femaleBtn" class="gender-btn p-3 rounded-xl border-2 border-gray-600 hover:border-pink-500 transition-all">
+                        <img src="https://avatanplus.com/files/resources/mid/6943d3ba6e69119b30f31054.png" class="w-20 h-28 object-contain">
+                        <p class="text-center mt-2 text-sm">Женский</p>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm mb-2 text-gray-300">Введите ник:</label>
+                <input type="text" id="nicknameInput" maxlength="15" placeholder="Ваш никнейм" 
+                    class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-purple-500 focus:outline-none">
+            </div>
+            
+            <button onclick="startChat()" class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-bold hover:from-purple-500 hover:to-blue-500 transition-all">
+                Войти в чат
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden h-screen flex flex-col">
+        <!-- Header -->
+        <div class="bg-gray-800 p-2 flex justify-between items-center border-b border-gray-700">
+            <div class="flex items-center gap-2">
+                <span class="text-lg">💬</span>
+                <span class="font-bold text-sm" id="currentNickname">Nickname</span>
+            </div>
+            <div class="flex items-center gap-2 bg-yellow-600 px-3 py-1 rounded-full">
+                <span>🪙</span>
+                <span id="coinsDisplay" class="font-bold">0</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Section: Chat + Users -->
+            <div class="flex h-2/5 border-b border-gray-700">
+                <!-- Chat Window -->
+                <div class="flex-1 flex flex-col bg-gray-800">
+                    <div class="p-2 bg-gray-700 text-xs font-bold">💬 Общий чат</div>
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-2 space-y-1 text-sm">
+                        <div class="text-gray-500 text-center text-xs">Добро пожаловать в чат!</div>
+                    </div>
+                </div>
+                <!-- Users List -->
+                <div class="w-28 bg-gray-850 border-l border-gray-700 flex flex-col">
+                    <div class="p-2 bg-gray-700 text-xs font-bold">👥 Онлайн</div>
+                    <div id="usersList" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Character Area -->
+            <div id="characterArea" class="flex-1 bg-gradient-to-b from-gray-700 to-gray-800 relative overflow-hidden" onclick="moveCharacter(event)">
+                <div class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-green-900/50 to-transparent"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="bg-gray-800 p-2 border-t border-gray-700">
+                <div class="flex gap-2">
+                    <input type="text" id="messageInput" placeholder="Введите сообщение..." 
+                        class="flex-1 p-2 rounded-lg bg-gray-700 border border-gray-600 focus:border-purple-500 focus:outline-none text-sm"
+                        onkeypress="if(event.key==='Enter')sendMessage()">
+                    <button onclick="sendMessage()" class="px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 transition-all">
+                        📤
+                    </button>
+                    <button onclick="openShop()" class="px-4 py-2 bg-amber-600 rounded-lg hover:bg-amber-500 transition-all text-sm font-bold">
+                        🛒
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shop Modal -->
+    <div id="shopModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="p-3 bg-gray-700 flex justify-between items-center">
+                <h2 class="font-bold text-lg">🛍️ Магазин</h2>
+                <div class="flex items-center gap-3">
+                    <div class="bg-yellow-600 px-3 py-1 rounded-full flex items-center gap-1">
+                        <span>🪙</span>
+                        <span id="shopCoins" class="font-bold">0</span>
+                    </div>
+                    <button onclick="closeShop()" class="text-2xl hover:text-red-400">×</button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-3">
+                <!-- Salary Button -->
+                <div class="mb-4 flex justify-center">
+                    <button id="salaryBtn" onclick="collectSalary()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-bold hover:from-green-500 hover:to-emerald-500 transition-all flex items-center gap-2">
+                        💰 Зарплата (+8 🪙)
+                    </button>
+                </div>
+                <div id="salaryTimer" class="text-center text-sm text-gray-400 mb-4 hidden">
+                    Следующая зарплата через: <span id="timerDisplay">60</span> сек
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex gap-1 mb-3 overflow-x-auto pb-2">
+                    <button onclick="showCategory('hair')" class="category-btn px-3 py-1 bg-purple-600 rounded-lg text-sm whitespace-nowrap" data-cat="hair">💇 Волосы</button>
+                    <button onclick="showCategory('top')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-sm whitespace-nowrap" data-cat="top">👕 Верх</button>
+                    <button onclick="showCategory('bottom')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-sm whitespace-nowrap" data-cat="bottom">👖 Низ</button>
+                    <button onclick="showCategory('dress')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-sm whitespace-nowrap" data-cat="dress">👗 Платья</button>
+                </div>
+
+                <!-- Items Grid -->
+                <div id="shopItems" class="grid grid-cols-3 gap-2">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            nickname: '',
+            gender: null,
+            coins: 0,
+            ownedItems: [],
+            equippedItems: { hair: null, top: null, bottom: null, dress: null },
+            position: { x: 50, y: 70 },
+            lastSalary: 0
+        };
+
+        // Simulated other users
+        let otherUsers = [];
+        let messages = [];
+
+        // Shop Items Data
+        const shopItems = {
+            female: {
+                hair: [
+                    { id: 'f_hair1', url: 'https://avatanplus.com/files/resources/mid/6943d35b25df419b30f19c13.png', price: 10 },
+                    { id: 'f_hair2', url: 'https://avatanplus.com/files/resources/mid/6943d35b260ea19b30f19c14.png', price: 12 },
+                    { id: 'f_hair3', url: 'https://avatanplus.com/files/resources/mid/6943d35b2677f19b30f19c16.png', price: 15 }
+                ],
+                dress: [
+                    { id: 'f_dress1', url: 'https://avatanplus.com/files/resources/mid/6943d35b25bf219b30f19c13.png', price: 20 },
+                    { id: 'f_dress2', url: 'https://avatanplus.com/files/resources/mid/6943d35b25a0119b30f19c12.png', price: 25 }
+                ],
+                top: [
+                    { id: 'f_top1', url: 'https://avatanplus.com/files/resources/mid/6943d35b2581619b30f19c12.png', price: 15 }
+                ],
+                bottom: [
+                    { id: 'f_bottom1', url: 'https://avatanplus.com/files/resources/mid/6943d35b2558219b30f19c11.png', price: 12 }
+                ]
+            },
+            male: {
+                hair: [
+                    { id: 'm_hair1', url: 'https://avatanplus.com/files/resources/mid/6943d35b1d58619b30f19bf0.png', price: 10 },
+                    { id: 'm_hair2', url: 'https://avatanplus.com/files/resources/mid/6943d35b2348919b30f19c09.png', price: 12 },
+                    { id: 'm_hair3', url: 'https://avatanplus.com/files/resources/mid/6943d35b2384d19b30f19c09.png', price: 14 },
+                    { id: 'm_hair4', url: 'https://avatanplus.com/files/resources/mid/6943d35b23b3219b30f19c0a.png', price: 16 }
+                ],
+                top: [
+                    { id: 'm_top1', url: 'https://avatanplus.com/files/resources/mid/6943d35b2427819b30f19c0c.png', price: 15 },
+                    { id: 'm_top2', url: 'https://avatanplus.com/files/resources/mid/6943d35b2464319b30f19c0d.png', price: 18 }
+                ],
+                bottom: [
+                    { id: 'm_bottom1', url: 'https://avatanplus.com/files/resources/mid/6943d35b24cb419b30f19c0f.png', price: 12 },
+                    { id: 'm_bottom2', url: 'https://avatanplus.com/files/resources/mid/6943d35b2500b19b30f19c10.png', price: 14 }
+                ],
+                dress: []
+            }
+        };
+
+        const bodyImages = {
+            male: 'https://avatanplus.com/files/resources/mid/6943d3ba6e91b19b30f31055.png',
+            female: 'https://avatanplus.com/files/resources/mid/6943d3ba6e69119b30f31054.png'
+        };
+
+        // Initialize Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+        }
+
+        // Load saved state
+        function loadState() {
+            const saved = localStorage.getItem('chatAppState');
+            if (saved) {
+                gameState = { ...gameState, ...JSON.parse(saved) };
+                if (gameState.nickname && gameState.gender) {
+                    document.getElementById('welcomeScreen').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    initializeApp();
+                }
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('chatAppState', JSON.stringify(gameState));
+        }
+
+        // Gender Selection
+        function selectGender(gender) {
+            gameState.gender = gender;
+            document.querySelectorAll('.gender-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'border-pink-500');
+                btn.classList.add('border-gray-600');
+            });
+            const selectedBtn = gender === 'male' ? document.getElementById('maleBtn') : document.getElementById('femaleBtn');
+            selectedBtn.classList.remove('border-gray-600');
+            selectedBtn.classList.add(gender === 'male' ? 'border-blue-500' : 'border-pink-500');
+        }
+
+        // Start Chat
+        function startChat() {
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            if (!nickname) {
+                alert('Введите никнейм!');
+                return;
+            }
+            if (!gameState.gender) {
+                alert('Выберите пол!');
+                return;
+            }
+            gameState.nickname = nickname;
+            saveState();
+            
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            initializeApp();
+        }
+
+        function initializeApp() {
+            document.getElementById('currentNickname').textContent = gameState.nickname;
+            updateCoinsDisplay();
+            createCharacter();
+            addSimulatedUsers();
+            updateUsersList();
+            addSystemMessage(`${gameState.nickname} присоединился к чату!`);
+            checkSalaryTimer();
+        }
+
+        function updateCoinsDisplay() {
+            document.getElementById('coinsDisplay').textContent = gameState.coins;
+            const shopCoins = document.getElementById('shopCoins');
+            if (shopCoins) shopCoins.textContent = gameState.coins;
+        }
+
+        // Character Creation
+        function createCharacter() {
+            const area = document.getElementById('characterArea');
+            const charDiv = document.createElement('div');
+            charDiv.id = 'myCharacter';
+            charDiv.className = 'user-character';
+            charDiv.style.left = gameState.position.x + '%';
+            charDiv.style.bottom = '10px';
+            charDiv.innerHTML = `
+                <div class="nickname-label">${gameState.nickname}</div>
+                <div class="character-container">
+                    <img src="${bodyImages[gameState.gender]}" class="character-layer" data-layer="body">
+                    <img src="" class="character-layer hidden" data-layer="bottom">
+                    <img src="" class="character-layer hidden" data-layer="dress">
+                    <img src="" class="character-layer hidden" data-layer="top">
+                    <img src="" class="character-layer hidden" data-layer="hair">
+                </div>
+            `;
+            area.appendChild(charDiv);
+            updateCharacterAppearance();
+        }
+
+        function updateCharacterAppearance() {
+            const char = document.getElementById('myCharacter');
+            if (!char) return;
+            
+            ['hair', 'top', 'bottom', 'dress'].forEach(layer => {
+                const img = char.querySelector(`[data-layer="${layer}"]`);
+                const equipped = gameState.equippedItems[layer];
+                if (equipped) {
+                    const items = shopItems[gameState.gender][layer];
+                    const item = items.find(i => i.id === equipped);
+                    if (item) {
+                        img.src = item.url;
+                        img.classList.remove('hidden');
+                    }
+                } else {
+                    img.classList.add('hidden');
+                }
+            });
+        }
+
+        function moveCharacter(event) {
+            const area = document.getElementById('characterArea');
+            const rect = area.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            gameState.position.x = Math.max(5, Math.min(95, x));
+            
+            const char = document.getElementById('myCharacter');
+            if (char) {
+                char.style.left = gameState.position.x + '%';
+            }
+            saveState();
+        }
+
+        // Simulated Users
+        function addSimulatedUsers() {
+            const names = ['Алекс', 'Мария', 'Денис', 'Анна'];
+            const genders = ['male', 'female', 'male', 'female'];
+            
+            names.forEach((name, i) => {
+                if (name !== gameState.nickname) {
+                    const user = {
+                        nickname: name,
+                        gender: genders[i],
+                        position: 20 + i * 20,
+                        equippedItems: {}
+                    };
+                    otherUsers.push(user);
+                    createOtherCharacter(user, i);
+                }
+            });
+        }
+
+        function createOtherCharacter(user, index) {
+            const area = document.getElementById('characterArea');
+            const charDiv = document.createElement('div');
+            charDiv.className = 'user-character opacity-70';
+            charDiv.style.left = user.position + '%';
+            charDiv.style.bottom = '10px';
+            charDiv.innerHTML = `
+                <div class="nickname-label">${user.nickname}</div>
+                <div class="character-container">
+                    <img src="${bodyImages[user.gender]}" class="character-layer">
+                </div>
+            `;
+            area.appendChild(charDiv);
+        }
+
+        function updateUsersList() {
+            const list = document.getElementById('usersList');
+            list.innerHTML = `
+                <div class="p-1 bg-purple-600/30 rounded text-center">👤 ${gameState.nickname}</div>
+                ${otherUsers.map(u => `<div class="p-1 bg-gray-700 rounded text-center">👤 ${u.nickname}</div>`).join('')}
+            `;
+        }
+
+        // Chat Functions
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            addMessage(gameState.nickname, text);
+            input.value = '';
+            
+            // Simulate response
+            setTimeout(() => {
+                const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
+                if (randomUser) {
+                    const responses = ['Привет!', 'Как дела?', 'Круто!', '👍', 'Отлично!', 'Хаха 😄'];
+                    addMessage(randomUser.nickname, responses[Math.floor(Math.random() * responses.length)]);
+                }
+            }, 1000 + Math.random() * 2000);
+        }
+
+        function addMessage(nickname, text) {
+            const chatDiv = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message p-1 rounded bg-gray-700/50';
+            const isMe = nickname === gameState.nickname;
+            msgDiv.innerHTML = `<span class="${isMe ? 'text-purple-400' : 'text-blue-400'} font-bold">${nickname}:</span> ${text}`;
+            chatDiv.appendChild(msgDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const chatDiv = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message text-center text-gray-400 text-xs';
+            msgDiv.textContent = `--- ${text} ---`;
+            chatDiv.appendChild(msgDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        // Shop Functions
+        let currentCategory = 'hair';
+
+        function openShop() {
+            document.getElementById('shopModal').classList.remove('hidden');
+            document.getElementById('shopCoins').textContent = gameState.coins;
+            showCategory('hair');
+        }
+
+        function closeShop() {
+            document.getElementById('shopModal').classList.add('hidden');
+        }
+
+        function showCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('bg-purple-600');
+                btn.classList.add('bg-gray-600');
+            });
+            document.querySelector(`[data-cat="${category}"]`).classList.remove('bg-gray-600');
+            document.querySelector(`[data-cat="${category}"]`).classList.add('bg-purple-600');
+            
+            renderShopItems(category);
+        }
+
+        function renderShopItems(category) {
+            const container = document.getElementById('shopItems');
+            const items = shopItems[gameState.gender][category] || [];
+            
+            if (items.length === 0) {
+                container.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-4">Нет доступных предметов</div>';
+                return;
+            }
+            
+            container.innerHTML = items.map(item => {
+                const owned = gameState.ownedItems.includes(item.id);
+                const equipped = gameState.equippedItems[category] === item.id;
+                return `
+                    <div class="shop-item p-2 rounded-lg border-2 ${owned ? 'border-green-500' : 'border-gray-600'} ${equipped ? 'equipped' : ''} bg-gray-700/80 cursor-pointer"
+                         onclick="handleItemClick('${item.id}', '${category}', ${item.price}, ${owned})">
+                        <div class="bg-gray-600/50 rounded p-1">
+                            <img src="${item.url}" class="w-full h-20 object-contain" style="background: transparent;">
+                        </div>
+                        <div class="text-center mt-1 text-xs">
+                            ${owned ? (equipped ? '✅ Надето' : '👆 Надеть') : `🪙 ${item.price}`}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function handleItemClick(itemId, category, price, owned) {
+            if (owned) {
+                // Toggle equip
+                if (gameState.equippedItems[category] === itemId) {
+                    gameState.equippedItems[category] = null;
+                } else {
+                    // If equipping dress, remove top/bottom
+                    if (category === 'dress') {
+                        gameState.equippedItems.top = null;
+                        gameState.equippedItems.bottom = null;
+                    }
+                    // If equipping top/bottom, remove dress
+                    if (category === 'top' || category === 'bottom') {
+                        gameState.equippedItems.dress = null;
+                    }
+                    gameState.equippedItems[category] = itemId;
+                }
+            } else {
+                // Buy item
+                if (gameState.coins >= price) {
+                    gameState.coins -= price;
+                    gameState.ownedItems.push(itemId);
+                    updateCoinsDisplay();
+                } else {
+                    alert('Недостаточно монет! 🪙');
+                    return;
+                }
+            }
+            
+            saveState();
+            updateCharacterAppearance();
+            renderShopItems(category);
+        }
+
+        // Salary System
+        let salaryInterval = null;
+
+        function collectSalary() {
+            const now = Date.now();
+            const timeSince = now - gameState.lastSalary;
+            
+            if (timeSince < 60000 && gameState.lastSalary > 0) {
+                return;
+            }
+            
+            gameState.coins += 8;
+            gameState.lastSalary = now;
+            saveState();
+            updateCoinsDisplay();
+            
+            document.getElementById('salaryBtn').disabled = true;
+            document.getElementById('salaryBtn').classList.add('opacity-50');
+            document.getElementById('salaryTimer').classList.remove('hidden');
+            
+            startSalaryTimer();
+        }
+
+        function checkSalaryTimer() {
+            const now = Date.now();
+            const timeSince = now - gameState.lastSalary;
+            
+            if (timeSince < 60000 && gameState.lastSalary > 0) {
+                document.getElementById('salaryBtn').disabled = true;
+                document.getElementById('salaryBtn').classList.add('opacity-50');
+                document.getElementById('salaryTimer').classList.remove('hidden');
+                startSalaryTimer();
+            }
+        }
+
+        function startSalaryTimer() {
+            if (salaryInterval) clearInterval(salaryInterval);
+            
+            salaryInterval = setInterval(() => {
+                const now = Date.now();
+                const remaining = Math.max(0, 60 - Math.floor((now - gameState.lastSalary) / 1000));
+                document.getElementById('timerDisplay').textContent = remaining;
+                
+                if (remaining <= 0) {
+                    clearInterval(salaryInterval);
+                    document.getElementById('salaryBtn').disabled = false;
+                    document.getElementById('salaryBtn').classList.remove('opacity-50');
+                    document.getElementById('salaryTimer').classList.add('hidden');
+                }
+            }, 1000);
+        }
+
+        // Initialize
+        loadState();
+    </script>
+</body>
+</html>

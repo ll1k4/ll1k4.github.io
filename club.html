@@ -36,7 +36,7 @@
             background: transparent;
         }
         .shop-item:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
         }
         .shop-item.owned {
             border-color: #22c55e !important;
@@ -73,6 +73,90 @@
             color: white;
             padding: 2px 6px;
             border-radius: 4px;
+        }
+        .category-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        /* Salary button effects */
+        .salary-effect {
+            position: relative;
+            overflow: visible;
+        }
+        .salary-effect::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            background: linear-gradient(45deg, #ffd700, #ffaa00, #ffd700, #ff8800);
+            background-size: 300% 300%;
+            border-radius: 16px;
+            z-index: -1;
+            animation: gradientShift 2s ease infinite;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .salary-effect:not(:disabled):hover::before {
+            opacity: 1;
+        }
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .coin-particle {
+            position: fixed;
+            font-size: 24px;
+            pointer-events: none;
+            z-index: 1000;
+            animation: coinFly 1s ease-out forwards;
+        }
+        @keyframes coinFly {
+            0% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1) rotate(0deg); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateY(-100px) scale(1.5) rotate(360deg); 
+            }
+        }
+        
+        .salary-flash {
+            animation: salaryFlash 0.5s ease;
+        }
+        @keyframes salaryFlash {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.2); box-shadow: 0 0 30px #ffd700, 0 0 60px #ffaa00; }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        
+        .coins-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            overflow: hidden;
+        }
+        .rain-coin {
+            position: absolute;
+            font-size: 20px;
+            animation: rainFall 1.5s ease-in forwards;
+        }
+        @keyframes rainFall {
+            0% { 
+                transform: translateY(-20px) rotate(0deg); 
+                opacity: 1;
+            }
+            100% { 
+                transform: translateY(100vh) rotate(720deg); 
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -125,7 +209,7 @@
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Top Section: Chat + Users -->
-            <div class="flex h-2/5 border-b border-gray-700">
+            <div class="flex h-3/5 border-b border-gray-700">
                 <!-- Chat Window -->
                 <div class="flex-1 flex flex-col bg-gray-800">
                     <div class="p-2 bg-gray-700 text-xs font-bold">💬 Общий чат</div>
@@ -165,7 +249,7 @@
 
     <!-- Shop Modal -->
     <div id="shopModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+        <div class="bg-gray-800 rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
             <div class="p-3 bg-gray-700 flex justify-between items-center">
                 <h2 class="font-bold text-lg">🛍️ Магазин</h2>
                 <div class="flex items-center gap-3">
@@ -180,7 +264,7 @@
             <div class="flex-1 overflow-y-auto p-3">
                 <!-- Salary Button -->
                 <div class="mb-4 flex justify-center">
-                    <button id="salaryBtn" onclick="collectSalary()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-bold hover:from-green-500 hover:to-emerald-500 transition-all flex items-center gap-2">
+                    <button id="salaryBtn" onclick="collectSalary()" class="salary-effect px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-bold hover:from-green-500 hover:to-emerald-500 transition-all flex items-center gap-2">
                         💰 Зарплата (+8 🪙)
                     </button>
                 </div>
@@ -189,11 +273,12 @@
                 </div>
 
                 <!-- Tabs -->
-                <div class="flex gap-1 mb-3 overflow-x-auto pb-2">
-                    <button onclick="showCategory('hair')" class="category-btn px-3 py-1 bg-purple-600 rounded-lg text-sm whitespace-nowrap" data-cat="hair">💇 Волосы</button>
-                    <button onclick="showCategory('top')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-sm whitespace-nowrap" data-cat="top">👕 Верх</button>
-                    <button onclick="showCategory('bottom')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-sm whitespace-nowrap" data-cat="bottom">👖 Низ</button>
-                    <button onclick="showCategory('dress')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-sm whitespace-nowrap" data-cat="dress">👗 Платья</button>
+                <div class="category-tabs mb-3">
+                    <button onclick="showCategory('body')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-xs whitespace-nowrap" data-cat="body">🧍 Тело</button>
+                    <button onclick="showCategory('hair')" class="category-btn px-3 py-1 bg-purple-600 rounded-lg text-xs whitespace-nowrap" data-cat="hair">💇 Волосы</button>
+                    <button onclick="showCategory('top')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-xs whitespace-nowrap" data-cat="top">👕 Верх</button>
+                    <button onclick="showCategory('bottom')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-xs whitespace-nowrap" data-cat="bottom">👖 Низ</button>
+                    <button onclick="showCategory('dress')" class="category-btn px-3 py-1 bg-gray-600 rounded-lg text-xs whitespace-nowrap" data-cat="dress">👗 Платья</button>
                 </div>
 
                 <!-- Items Grid -->
@@ -210,7 +295,7 @@
             gender: null,
             coins: 0,
             ownedItems: [],
-            equippedItems: { hair: null, top: null, bottom: null, dress: null },
+            equippedItems: { body: null, hair: null, top: null, bottom: null, dress: null },
             position: { x: 50, y: 70 },
             lastSalary: 0
         };
@@ -219,47 +304,74 @@
         let otherUsers = [];
         let messages = [];
 
+        // Default body images
+        const defaultBodies = {
+            male: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man.png',
+            female: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman.png'
+        };
+
         // Shop Items Data
         const shopItems = {
             female: {
+                body: [
+                    { id: 'f_body0', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman.png', price: 0 },
+                    { id: 'f_body1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman1.png', price: 20 },
+                    { id: 'f_body2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman2.png', price: 25 },
+                    { id: 'f_body3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman3.png', price: 30 },
+                    { id: 'f_body4', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman4.png', price: 35 }
+                ],
                 hair: [
                     { id: 'f_hair1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-1.png', price: 10 },
                     { id: 'f_hair2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-2.png', price: 12 },
-                    { id: 'f_hair3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-3.png', price: 15 }
+                    { id: 'f_hair3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-3.png', price: 15 },
+                    { id: 'f_hair4', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-4.png', price: 18 },
+                    { id: 'f_hair5', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-5.png', price: 20 },
+                    { id: 'f_hair6', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-6.png', price: 22 },
+                    { id: 'f_hair7', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-hair-7.png', price: 25 }
                 ],
                 dress: [
                     { id: 'f_dress1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-up-1.png', price: 20 },
                     { id: 'f_dress2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-up-2.png', price: 25 }
                 ],
                 top: [
-                    { id: 'f_top1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-up-3.png', price: 15 }
+                    { id: 'f_top1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-up-3.png', price: 15 },
+                    { id: 'f_top2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-up-4.png', price: 18 },
+                    { id: 'f_top3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-up-5.png', price: 22 }
                 ],
                 bottom: [
-                    { id: 'f_bottom1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-низ-1.png', price: 12 }
+                    { id: 'f_bottom1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-низ-1.png', price: 12 },
+                    { id: 'f_bottom2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman-низ-2.png', price: 15 }
                 ]
             },
             male: {
+                body: [
+                    { id: 'm_body0', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man.png', price: 0 },
+                    { id: 'm_body1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man1.png', price: 20 },
+                    { id: 'm_body2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man2.png', price: 25 },
+                    { id: 'm_body3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man3.png', price: 30 },
+                    { id: 'm_body4', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man4.png', price: 35 }
+                ],
                 hair: [
                     { id: 'm_hair1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-1.png', price: 10 },
                     { id: 'm_hair2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-2.png', price: 12 },
                     { id: 'm_hair3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-3.png', price: 14 },
-                    { id: 'm_hair4', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-4.png', price: 16 }
+                    { id: 'm_hair4', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-4.png', price: 16 },
+                    { id: 'm_hair5', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-5.png', price: 18 },
+                    { id: 'm_hair6', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-6.png', price: 20 },
+                    { id: 'm_hair7', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-hair-7.png', price: 22 }
                 ],
                 top: [
                     { id: 'm_top1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-up-1.png', price: 15 },
-                    { id: 'm_top2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-up-2.png', price: 18 }
+                    { id: 'm_top2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-up-2.png', price: 18 },
+                    { id: 'm_top3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-up-3.png', price: 22 }
                 ],
                 bottom: [
                     { id: 'm_bottom1', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-низ-1.png', price: 12 },
-                    { id: 'm_bottom2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-низ-2.png', price: 14 }
+                    { id: 'm_bottom2', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-низ-2.png', price: 14 },
+                    { id: 'm_bottom3', url: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man-низ-3.png', price: 18 }
                 ],
                 dress: []
             }
-        };
-
-        const bodyImages = {
-            male: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/man.png',
-            female: 'https://raw.githubusercontent.com/ll1k4/ll1k4.github.io/main/woman.png'
         };
 
         // Initialize Telegram WebApp
@@ -272,7 +384,12 @@
         function loadState() {
             const saved = localStorage.getItem('chatAppState');
             if (saved) {
-                gameState = { ...gameState, ...JSON.parse(saved) };
+                const parsed = JSON.parse(saved);
+                gameState = { ...gameState, ...parsed };
+                // Ensure body is in equippedItems
+                if (!gameState.equippedItems.body) {
+                    gameState.equippedItems.body = null;
+                }
                 if (gameState.nickname && gameState.gender) {
                     document.getElementById('welcomeScreen').classList.add('hidden');
                     document.getElementById('mainApp').classList.remove('hidden');
@@ -309,6 +426,11 @@
                 return;
             }
             gameState.nickname = nickname;
+            // Give default body as owned
+            const defaultBodyId = gameState.gender === 'male' ? 'm_body0' : 'f_body0';
+            if (!gameState.ownedItems.includes(defaultBodyId)) {
+                gameState.ownedItems.push(defaultBodyId);
+            }
             saveState();
             
             document.getElementById('welcomeScreen').classList.add('hidden');
@@ -332,6 +454,17 @@
             if (shopCoins) shopCoins.textContent = gameState.coins;
         }
 
+        // Get current body URL
+        function getCurrentBodyUrl() {
+            const equippedBody = gameState.equippedItems.body;
+            if (equippedBody) {
+                const bodies = shopItems[gameState.gender].body;
+                const body = bodies.find(b => b.id === equippedBody);
+                if (body) return body.url;
+            }
+            return defaultBodies[gameState.gender];
+        }
+
         // Character Creation
         function createCharacter() {
             const area = document.getElementById('characterArea');
@@ -343,7 +476,7 @@
             charDiv.innerHTML = `
                 <div class="nickname-label">${gameState.nickname}</div>
                 <div class="character-container">
-                    <img src="${bodyImages[gameState.gender]}" class="character-layer" data-layer="body">
+                    <img src="${getCurrentBodyUrl()}" class="character-layer" data-layer="body">
                     <img src="" class="character-layer hidden" data-layer="bottom">
                     <img src="" class="character-layer hidden" data-layer="dress">
                     <img src="" class="character-layer hidden" data-layer="top">
@@ -358,6 +491,11 @@
             const char = document.getElementById('myCharacter');
             if (!char) return;
             
+            // Update body
+            const bodyImg = char.querySelector('[data-layer="body"]');
+            bodyImg.src = getCurrentBodyUrl();
+            
+            // Update clothing layers
             ['hair', 'top', 'bottom', 'dress'].forEach(layer => {
                 const img = char.querySelector(`[data-layer="${layer}"]`);
                 const equipped = gameState.equippedItems[layer];
@@ -409,13 +547,13 @@
         function createOtherCharacter(user, index) {
             const area = document.getElementById('characterArea');
             const charDiv = document.createElement('div');
-            charDiv.className = 'user-character opacity-70';
+            charDiv.className = 'user-character';
             charDiv.style.left = user.position + '%';
             charDiv.style.bottom = '10px';
             charDiv.innerHTML = `
                 <div class="nickname-label">${user.nickname}</div>
                 <div class="character-container">
-                    <img src="${bodyImages[user.gender]}" class="character-layer">
+                    <img src="${defaultBodies[user.gender]}" class="character-layer">
                 </div>
             `;
             area.appendChild(charDiv);
@@ -504,14 +642,15 @@
             container.innerHTML = items.map(item => {
                 const owned = gameState.ownedItems.includes(item.id);
                 const equipped = gameState.equippedItems[category] === item.id;
+                const isFree = item.price === 0;
                 return `
                     <div class="shop-item p-2 rounded-lg border-2 ${owned ? 'border-green-500' : 'border-gray-600'} ${equipped ? 'equipped' : ''} bg-gray-700/80 cursor-pointer"
                          onclick="handleItemClick('${item.id}', '${category}', ${item.price}, ${owned})">
                         <div class="bg-gray-600/50 rounded p-1">
-                            <img src="${item.url}" class="w-full h-20 object-contain" style="background: transparent;">
+                            <img src="${item.url}" class="w-full h-16 object-contain" style="background: transparent;">
                         </div>
                         <div class="text-center mt-1 text-xs">
-                            ${owned ? (equipped ? '✅ Надето' : '👆 Надеть') : `🪙 ${item.price}`}
+                            ${owned ? (equipped ? '✅ Надето' : '👆 Надеть') : (isFree ? '🆓 Бесплатно' : `🪙 ${item.price}`)}
                         </div>
                     </div>
                 `;
@@ -522,7 +661,10 @@
             if (owned) {
                 // Toggle equip
                 if (gameState.equippedItems[category] === itemId) {
-                    gameState.equippedItems[category] = null;
+                    // Can't unequip body
+                    if (category !== 'body') {
+                        gameState.equippedItems[category] = null;
+                    }
                 } else {
                     // If equipping dress, remove top/bottom
                     if (category === 'dress') {
@@ -568,11 +710,64 @@
             saveState();
             updateCoinsDisplay();
             
+            // Visual effects
+            playSalaryEffects();
+            
             document.getElementById('salaryBtn').disabled = true;
             document.getElementById('salaryBtn').classList.add('opacity-50');
             document.getElementById('salaryTimer').classList.remove('hidden');
             
             startSalaryTimer();
+        }
+        
+        function playSalaryEffects() {
+            const btn = document.getElementById('salaryBtn');
+            
+            // Flash animation on button
+            btn.classList.add('salary-flash');
+            setTimeout(() => btn.classList.remove('salary-flash'), 500);
+            
+            // Create coin particles flying up
+            const btnRect = btn.getBoundingClientRect();
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'coin-particle';
+                    coin.textContent = '🪙';
+                    coin.style.left = (btnRect.left + Math.random() * btnRect.width) + 'px';
+                    coin.style.top = (btnRect.top + Math.random() * 20) + 'px';
+                    document.body.appendChild(coin);
+                    setTimeout(() => coin.remove(), 1000);
+                }, i * 50);
+            }
+            
+            // Coin rain effect
+            const rainContainer = document.createElement('div');
+            rainContainer.className = 'coins-rain';
+            document.body.appendChild(rainContainer);
+            
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'rain-coin';
+                    coin.textContent = '🪙';
+                    coin.style.left = Math.random() * 100 + '%';
+                    coin.style.animationDelay = Math.random() * 0.3 + 's';
+                    rainContainer.appendChild(coin);
+                }, i * 30);
+            }
+            
+            setTimeout(() => rainContainer.remove(), 2000);
+            
+            // Animate coins display in header
+            const coinsDisplay = document.getElementById('coinsDisplay');
+            coinsDisplay.style.transform = 'scale(1.5)';
+            coinsDisplay.style.color = '#ffd700';
+            coinsDisplay.style.transition = 'all 0.3s';
+            setTimeout(() => {
+                coinsDisplay.style.transform = 'scale(1)';
+                coinsDisplay.style.color = '';
+            }, 300);
         }
 
         function checkSalaryTimer() {
